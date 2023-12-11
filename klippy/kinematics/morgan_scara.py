@@ -24,7 +24,8 @@
 #
 
 import math, logging
-import stepper, homing, mathutil, chelper
+#import stepper, homing, mathutil, chelper
+import stepper, mathutil, chelper
 
 class MorganScaraKinematics:
     def __init__(self, toolhead, config):
