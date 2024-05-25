@@ -1,7 +1,7 @@
 import math
 import logging
 from stepper import PrinterStepper, LookupMultiRail, PrinterRail
-# import homing
+import homing
 
 class MorganScaraKinematics:
     def __init__(self, toolhead, config):
