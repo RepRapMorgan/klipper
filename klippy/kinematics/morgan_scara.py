@@ -1,7 +1,7 @@
 import math
 import logging
+import chelper
 from stepper import PrinterStepper, LookupMultiRail, PrinterRail
-import homing
 
 class MorganScaraKinematics:
     def __init__(self, toolhead, config):
@@ -80,6 +80,7 @@ class MorganScaraKinematics:
         self.need_home = True
 
     def home(self, homing_state):
+        # All axes are homed simultaneously
         homing_state.set_axes([0, 1, 2])
         forcepos = list(self.home_position)
         forcepos[2] = -1.
@@ -88,8 +89,8 @@ class MorganScaraKinematics:
     def check_move(self, move):
         end_pos = move.end_pos
         if self.need_home:
-            raise homing.EndstopMoveError(end_pos, "Must home (G28) first")
-
+            raise move.move_error("Must home first")
+        
         distance = math.sqrt(end_pos[0] ** 2 + end_pos[1] ** 2)
         if distance < self.limit_xy_magnitude[0]:
             raise homing.EndstopMoveError(end_pos, "(x,y) pos too close to base joint")
