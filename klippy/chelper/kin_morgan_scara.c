@@ -40,7 +40,7 @@ morgan_calc_shoulder_joint_angle(struct stepper_kinematics *sk, struct coord *c)
 }
 
 static double
-left_stepper_calc_position(struct stepper_kinematics *sk, struct move *m, double move_time)
+inner_stepper_calc_position(struct stepper_kinematics *sk, struct move *m, double move_time)
 {
     struct coord c = move_get_coord(m, move_time);
     double angle = M_PI / 2 + morgan_calc_shoulder_joint_angle(sk, &c) - atan2(c.y, c.x);
@@ -49,14 +49,15 @@ left_stepper_calc_position(struct stepper_kinematics *sk, struct move *m, double
 }
 
 static double
-right_stepper_calc_position(struct stepper_kinematics *sk, struct move *m, double move_time)
+outer_stepper_calc_position(struct stepper_kinematics *sk, struct move *m, double move_time)
 {
     struct coord c = move_get_coord(m, move_time);
     double angle = M_PI / 2 - morgan_calc_shoulder_joint_angle(sk, &c) - atan2(c.y, c.x);
 
     return angle;
 }
-struct stepper_kinematics *__visible
+
+struct stepper_kinematics * __visible
 morgan_scara_stepper_alloc(char stepper, double inner_arm_length, double outer_arm_length)
 {
     struct morgan_stepper *ms = calloc(1, sizeof(*ms));
@@ -69,9 +70,9 @@ morgan_scara_stepper_alloc(char stepper, double inner_arm_length, double outer_a
     ms->sk.active_flags = AF_X | AF_Y;
     /* Setup itersolve callback */
     if (stepper == 'a')
-        ms->sk.calc_position_cb = left_stepper_calc_position;
+        ms->sk.calc_position_cb = inner_stepper_calc_position;
     else if (stepper == 'b')
-        ms->sk.calc_position_cb = right_stepper_calc_position;
+        ms->sk.calc_position_cb = outer_stepper_calc_position;
     else
     {
         free(ms);
