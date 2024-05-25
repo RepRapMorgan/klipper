@@ -34,8 +34,8 @@ class MorganScaraKinematics:
         self.max_z_velocity = config.getfloat('max_z_velocity', max_velocity, above=0., maxval=max_velocity)
         self.max_z_accel = config.getfloat('max_z_accel', max_accel, above=0., maxval=max_accel)
 
-        for rail in self.rails:
-            rail.set_max_jerk(9999999.9, 9999999.9)
+        #for rail in self.rails:
+        #rail.set_max_jerk(9999999.9, 9999999.9)
 
         for s in self.get_steppers():
             s.set_trapq(toolhead.get_trapq())
