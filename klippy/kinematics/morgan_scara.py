@@ -1,7 +1,6 @@
 import math
 import logging
-import chelper
-from stepper import PrinterStepper, LookupMultiRail, PrinterRail
+from stepper import PrinterRail, LookupMultiRail
 
 class MorganScaraKinematics:
     def __init__(self, toolhead, config):
@@ -11,13 +10,13 @@ class MorganScaraKinematics:
         stepper_configs = [config.getsection('stepper_' + s) for s in 'abz']
 
         # Inner arm
-        rail_a = PrinterStepper(stepper_configs[0], units_in_radians=True)
+        rail_a = PrinterRail(stepper_configs[0], units_in_radians=True)
         a_endstop = rail_a.get_homing_info().position_endstop
         rail_a.setup_itersolve('morgan_scara_stepper_alloc',
                               'a', self.inner_arm_length, self.outer_arm_length)
 
         # Outer arm
-        rail_b = PrinterStepper(stepper_configs[1], units_in_radians=True)
+        rail_b = PrinterRail(stepper_configs[1], units_in_radians=True)
         rail_b.setup_itersolve('morgan_scara_stepper_alloc',
                               'b', self.inner_arm_length, self.outer_arm_length)
 
