@@ -10,12 +10,13 @@ class MorganScaraKinematics:
         self.outer_arm_length = config.getfloat('outer_arm_length', above=0.)
         stepper_configs = [config.getsection('stepper_' + s) for s in 'abz']
 
-        # Left arm
+        # Inner arm
         rail_a = PrinterStepper(stepper_configs[0], units_in_radians=True)
+        a_endstop = rail_a.get_homing_info().position_endstop
         rail_a.setup_itersolve('morgan_scara_stepper_alloc',
                               'a', self.inner_arm_length, self.outer_arm_length)
 
-        # Right arm
+        # Outer arm
         rail_b = PrinterStepper(stepper_configs[1], units_in_radians=True)
         rail_b.setup_itersolve('morgan_scara_stepper_alloc',
                               'b', self.inner_arm_length, self.outer_arm_length)
