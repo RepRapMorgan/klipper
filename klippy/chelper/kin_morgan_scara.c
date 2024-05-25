@@ -32,33 +32,37 @@ morgan_calc_shoulder_joint_angle(struct stepper_kinematics *sk, struct coord *c)
 
     // Find angles using law of cosines
     double shoulder_joint_angle;
-    shoulder_joint_angle = acos((ms->inner_arm2 + distance2 - ms->outer_arm2) / (2 * ms->inner_arm_length * distance));
-    // double elbow_joint_angle;
-    // elbow_joint_angle = acos((ms->outer_arm2 + ms->inner_arm2 - distance2) / (2*ms->outer_arm_length*ms->inner_arm_length));
-
+    shoulder_joint_angle = acos((ms->inner_arm2 + distance2 - ms->outer_arm2) / 
+    (2 * ms->inner_arm_length * distance));
+    
     return shoulder_joint_angle;
 }
 
 static double
-inner_stepper_calc_position(struct stepper_kinematics *sk, struct move *m, double move_time)
+inner_stepper_calc_position(
+    struct stepper_kinematics *sk, struct move *m, double move_time)
 {
     struct coord c = move_get_coord(m, move_time);
-    double angle = M_PI / 2 + morgan_calc_shoulder_joint_angle(sk, &c) - atan2(c.y, c.x);
+    double angle = M_PI / 2 + morgan_calc_shoulder_joint_angle(sk, &c) - 
+    atan2(c.y, c.x);
 
     return angle;
 }
 
 static double
-outer_stepper_calc_position(struct stepper_kinematics *sk, struct move *m, double move_time)
+outer_stepper_calc_position(
+    struct stepper_kinematics *sk, struct move *m, double move_time)
 {
     struct coord c = move_get_coord(m, move_time);
-    double angle = M_PI / 2 - morgan_calc_shoulder_joint_angle(sk, &c) - atan2(c.y, c.x);
+    double angle = M_PI / 2 - morgan_calc_shoulder_joint_angle(sk, &c)
+    - atan2(c.y, c.x);
 
     return angle;
 }
 
 struct stepper_kinematics * __visible
-morgan_scara_stepper_alloc(char stepper, double inner_arm_length, double outer_arm_length)
+morgan_scara_stepper_alloc(
+    char stepper, double inner_arm_length, double outer_arm_length)
 {
     struct morgan_stepper *ms = calloc(1, sizeof(*ms));
     ms->inner_arm_length = inner_arm_length;
