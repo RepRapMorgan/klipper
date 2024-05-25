@@ -17,6 +17,7 @@ class RotaryDeltaKinematics:
         rail_b = stepper.PrinterRail(
             stepper_configs[1], need_position_minmax=False,
             default_position_endstop=a_endstop, units_in_radians=True)
+        b_endstop = rail_b.get_homing_info().position_endstop
         rail_c = stepper.PrinterRail(
             stepper_configs[2], need_position_minmax=False,
             default_position_endstop=a_endstop, units_in_radians=True)
