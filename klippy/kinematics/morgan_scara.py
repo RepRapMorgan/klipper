@@ -28,12 +28,15 @@ class MorganScaraKinematics:
         self.steppers = [rail_a, rail_b] + rail_z.get_steppers()
         self.rails = [rail_a]
 
-        config.get_printer().register_event_handler("stepper_enable:motor_off", self._motor_off)
+        config.get_printer().register_event_handler(
+            "stepper_enable:motor_off", self._motor_off)
 
         # Setup stepper max halt velocity
         max_velocity, max_accel = toolhead.get_max_velocity()
-        self.max_z_velocity = config.getfloat('max_z_velocity', max_velocity, above=0., maxval=max_velocity)
-        self.max_z_accel = config.getfloat('max_z_accel', max_accel, above=0., maxval=max_accel)
+        self.max_z_velocity = config.getfloat(
+            'max_z_velocity', max_velocity, above=0., maxval=max_velocity)
+        self.max_z_accel = config.getfloat(
+            'max_z_accel', max_accel, above=0., maxval=max_accel)
 
         #for rail in self.rails:
         #rail.set_max_jerk(9999999.9, 9999999.9)
@@ -51,8 +54,9 @@ class MorganScaraKinematics:
 
         logging.info('SCARA with inner/outer arms {:.1f}/{:.1f}mm'
                      .format(self.inner_arm_length, self.outer_arm_length))
-        logging.info('SCARA with min/max (x,y) distances {:.1f}/{:.1f}mm'
-                     .format(self.limit_xy_magnitude[0], self.limit_xy_magnitude[1]))
+        logging.info(
+            'SCARA with min/max (x,y) distances {:.1f}/{:.1f}mm'
+            .format(self.limit_xy_magnitude[0], self.limit_xy_magnitude[1]))
         self.home_position = (0, self.limit_xy_magnitude[0], 0)
         self.set_position(self.home_position, ())
 
@@ -65,10 +69,12 @@ class MorganScaraKinematics:
         spos = [s.get_tag_position() for s in self.steppers]
         a_angle, b_angle, z = spos
         midpoint = (a_angle - b_angle) / 2.0
-        distance = self.inner_arm_length * math.cos(midpoint) - math.sqrt(
-            self.outer_arm_length ** 2 - (self.inner_arm_length ** 2) * (math.sin(midpoint) ** 2)
-        )
-        x, y = math.cos(a_angle - midpoint) * distance, math.sin(a_angle - midpoint) * distance
+        distance = (self.inner_arm_length * math.cos(midpoint)
+            - math.sqrt(self.outer_arm_length ** 2
+                        - (self.inner_arm_length ** 2) * (math.sin(midpoint) ** 2)))
+
+        x, y = (math.cos(a_angle - midpoint) * distance,
+        math.sin(a_angle - midpoint) * distance)
         return [x, y, z]
 
     def set_position(self, newpos, homing_axes):
@@ -91,7 +97,7 @@ class MorganScaraKinematics:
         end_pos = move.end_pos
         if self.need_home:
             raise move.move_error("Must home first")
-        
+
         distance = math.sqrt(end_pos[0] ** 2 + end_pos[1] ** 2)
         if distance < self.limit_xy_magnitude[0]:
             raise homing.EndstopMoveError(end_pos, "(x,y) pos too close to base joint")
