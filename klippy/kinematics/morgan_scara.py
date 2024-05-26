@@ -17,7 +17,7 @@ class MorganScaraKinematics:
                               'a', self.link_a, self.link_b)
 
         # Link B (distal arm segment)
-        rail_b = stepper.PrinterRail(stepper_configs[1], 
+        rail_b = stepper.PrinterRail(stepper_configs[1],
                                      #need_position_minmax = True,
                                      units_in_radians = True)
         b_endstop = rail_b.get_homing_info().position_endstop
@@ -110,7 +110,8 @@ class MorganScaraKinematics:
         elif not move.axes_d[2]:
             return
         z_ratio = move.move_d / abs(move.axes_d[2])
-        move.limit_speed(self.max_z_velocity * z_ratio, self.max_z_accel * z_ratio)
+        move.limit_speed(self.max_z_velocity * z_ratio,
+                         self.max_z_accel * z_ratio)
 
     def get_status(self):
         return {'homed_axes': '' if self.need_home else 'XYZ'}
