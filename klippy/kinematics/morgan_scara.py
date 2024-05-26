@@ -9,7 +9,7 @@ import stepper, chelper
 class MorganScaraKinematics:
     def __init__(self, toolhead, config):
         # Setup morgan rails
-        stepper_configs = [config.getsection('stepper_' + s) for s in 'abhiz']
+        stepper_configs = [config.getsection('stepper_' + s) for s in 'abz']
 
         # Link A (proximal arm segment)
         rail_a = stepper.PrinterStepper(stepper_configs[0],
