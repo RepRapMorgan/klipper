@@ -10,7 +10,7 @@ class MorganScaraKinematics:
 
         # Link A (proximal arm segment)
         rail_a = stepper.PrinterRail(stepper_configs[0],
-                                     need_position_minmax = True,
+                                     #need_position_minmax = True,
                                      units_in_radians = True)
         a_endstop = rail_a.get_homing_info().position_endstop
         rail_a.setup_itersolve('morgan_scara_stepper_alloc',
@@ -18,7 +18,7 @@ class MorganScaraKinematics:
 
         # Link B (distal arm segment)
         rail_b = stepper.PrinterRail(stepper_configs[1], 
-                                     need_position_minmax = True,
+                                     #need_position_minmax = True,
                                      units_in_radians = True)
         b_endstop = rail_b.get_homing_info().position_endstop
         rail_b.setup_itersolve('morgan_scara_stepper_alloc',
