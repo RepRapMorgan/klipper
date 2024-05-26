@@ -1,55 +1,58 @@
+# Code for handling the kinematics of polar robots
+#
+# Copyright (C) 2018-2021  Kevin O'Connor <kevin@koconnor.net>
+#
+# This file may be distributed under the terms of the GNU GPLv3 license.
 import math, logging
 import stepper, mathutil, chelper
 
 class MorganScaraKinematics:
     def __init__(self, toolhead, config):
-        # Read config
-        self.link_a = config.getfloat('link_a_length', above=0.)
-        self.link_b = config.getfloat('link_b_length', above=0.)
-        stepper_configs = [config.getsection('stepper_' + s) for s in 'abz']
+        # Setup morgan rails
+        stepper_configs = [config.getsection('stepper_' + s) for s in 'abhiz']
 
         # Link A (proximal arm segment)
-        rail_a = stepper.PrinterRail(stepper_configs[0],
-                                     #need_position_minmax = True,
+        rail_a = stepper.PrinterStepper(stepper_configs[0],
                                      units_in_radians = True)
-        #a_endstop = rail_a.get_homing_info().position_endstop
-        rail_a.setup_itersolve('morgan_scara_stepper_alloc',
-                              'a', self.link_a, self.link_b)
-
         # Link B (distal arm segment)
-        rail_b = stepper.PrinterRail(stepper_configs[1],
-                                     #need_position_minmax = True,
+        rail_b = stepper.PrinterStepper(stepper_configs[1],
                                      units_in_radians = True)
-        #b_endstop = rail_b.get_homing_info().position_endstop
-        rail_b.setup_itersolve('morgan_scara_stepper_alloc',
-                              'b', self.link_a, self.link_b)
-
         # Elevator
         rail_z = stepper.LookupMultiRail(stepper_configs[2])
-        rail_z.setup_itersolve('cartesian_stepper_alloc', 'z')
-
         self.steppers = [rail_a, rail_b] + rail_z.get_steppers()
-        self.rails = [rail_a, rail_b, rail_z]
+        self.rails = [rail_z]
+        
+        # Create two dummy cartesian kinematics for homing
+        self.printer = config.get_printer()
+        ffi_main, ffi_lib = chelper.get_ffi()
+        self.cartesian_kinematics_L = ffi_main.gc(ffi_lib.cartesian_stepper_alloc('x'), ffi_lib.free)
+        self.cartesian_kinematics_R = ffi_main.gc(ffi_lib.cartesian_stepper_alloc('y'), ffi_lib.free)
 
         config.get_printer().register_event_handler(
             "stepper_enable:motor_off", self._motor_off)
 
-        # Setup stepper max halt velocity
+        # Read config
         max_velocity, max_accel = toolhead.get_max_velocity()
-        self.max_z_velocity = config.getfloat(
-            'max_z_velocity', max_velocity, above=0., maxval=max_velocity)
-        self.max_z_accel = config.getfloat(
-            'max_z_accel', max_accel, above=0., maxval=max_accel)
-
-        #for rail in self.rails:
-        #rail.set_max_jerk(9999999.9, 9999999.9)
-
+        self.max_z_velocity = config.getfloat('max_z_velocity', max_velocity,
+                                              above=0., maxval=max_velocity)
+        self.link_a = config.getfloat('link_a_length', above=0.)
+        self.link_b = config.getfloat('link_b_length', above=0.)
+        # Setup rotary morgan calibration helper
+        
+        # Setup iterative solver
+        rail_a.setup_itersolve('morgan_scara_stepper_alloc',
+                              'a', self.link_a, self.link_b)
+        rail_b.setup_itersolve('morgan_scara_stepper_alloc',
+                              'b', self.link_a, self.link_b)
+        rail_z.setup_itersolve('cartesian_stepper_alloc', 'z')
+        
         for s in self.get_steppers():
             s.set_trapq(toolhead.get_trapq())
             toolhead.register_step_generator(s.generate_steps)
 
         # Setup boundary checks
         self.need_home = True
+        # Self Limit prevents collisions with arm hardware
         self.limit_xy_magnitude = (
             # Distances of less than 45mm can cause collition
             config.getfloat('min_base_distance', 45., above=0.),
@@ -64,10 +67,8 @@ class MorganScaraKinematics:
         self.home_position = (0, self.limit_xy_magnitude[0], 0)
         self.set_position(self.home_position, ())
 
-    def get_steppers(self, flags=""):
-        #if flags == "Z":
-        #           return self.rails[-1].get_steppers()
-        return list(self.steppers)
+    def get_steppers(self):
+        return [s for rail in self.rails for s in rail.get_steppers()]
 
     def calc_tag_position(self):
         spos = [s.get_tag_position() for s in self.steppers]
@@ -91,11 +92,27 @@ class MorganScaraKinematics:
         self.need_home = True
 
     def home(self, homing_state):
-        # All axes are homed simultaneously
+        kinematics = [self.cartesian_kinematics_L, self.cartesian_kinematics_R]
+        prev_sks    = [stepper.set_stepper_kinematics(kinematic)
+            for stepper, kinematic in zip(self.steppers, kinematics)]
+
+        # home
+        rails = [self.rails[0], self.rails[1], self.rails[2]]
         homing_state.set_axes([0, 1, 2])
         forcepos = list(self.home_position)
         forcepos[2] = -1.
-        homing_state.home_rails(self.rails, forcepos, self.home_position)
+        homing_state.home_rails(rails, forcepos, self.home_position)
+
+        # swap back to original kinematics
+        for stepper, prev_sk in zip(self.steppers, prev_sks):
+            stepper.set_stepper_kinematics(prev_sk)
+            # do kinematic math to figure out what x,y the home position actually is, and set it
+            #self.toolhead.set_position( [x, y, 0, 0], (0, 1))
+        # All axes are homed simultaneously
+        #homing_state.set_axes([0, 1, 2])
+        #forcepos = list(self.home_position)
+        #forcepos[2] = -1.
+        #homing_state.home_rails(self.rails, forcepos, self.home_position)
 
     def check_move(self, move):
         end_pos = move.end_pos
