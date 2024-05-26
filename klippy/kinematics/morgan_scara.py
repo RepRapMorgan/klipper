@@ -1,8 +1,5 @@
-import math
-import logging
-import stepper
-#from stepper import PrinterRail, LookupMultiRail
-
+import math, logging
+import stepper, mathutil, chelper
 
 class MorganScaraKinematics:
     def __init__(self, toolhead, config):
@@ -12,12 +9,18 @@ class MorganScaraKinematics:
         stepper_configs = [config.getsection('stepper_' + s) for s in 'abz']
 
         # Link A (proximal arm segment)
-        rail_a = stepper.PrinterStepper(stepper_configs[0], units_in_radians=True)
+        rail_a = stepper.PrinterRail(stepper_configs[0],
+                                     need_position_minmax = True,
+                                     units_in_radians = True)
+        a_endstop = rail_a.get_homing_info().position_endstop
         rail_a.setup_itersolve('morgan_scara_stepper_alloc',
                               'a', self.link_a, self.link_b)
 
         # Link B (distal arm segment)
-        rail_b = stepper.PrinterStepper(stepper_configs[1], units_in_radians=True)
+        rail_b = stepper.PrinterRail(stepper_configs[1], 
+                                     need_position_minmax = True,
+                                     units_in_radians = True)
+        b_endstop = rail_b.get_homing_info().position_endstop
         rail_b.setup_itersolve('morgan_scara_stepper_alloc',
                               'b', self.link_a, self.link_b)
 
@@ -62,9 +65,9 @@ class MorganScaraKinematics:
         self.set_position(self.home_position, ())
 
     def get_steppers(self, flags=""):
-        if flags == "Z":
-            return self.rails[-1].get_steppers()
-        return self.steppers
+        #if flags == "Z":
+        #           return self.rails[-1].get_steppers()
+        return list(self.steppers)
 
     def calc_tag_position(self):
         spos = [s.get_tag_position() for s in self.steppers]
