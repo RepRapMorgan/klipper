@@ -72,7 +72,7 @@ struct stepper_kinematics *__visible morgan_scara_stepper_alloc(
 
     /* Ensure itersolve is called for all X and Y moves */
     ms->sk.active_flags = AF_X | AF_Y;
-    
+
     /* Setup itersolve callback */
     switch (stepper)
     {
@@ -85,6 +85,6 @@ struct stepper_kinematics *__visible morgan_scara_stepper_alloc(
     default:
         break;
     }
-    
+
     return &ms->sk;
 }
