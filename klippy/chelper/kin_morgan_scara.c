@@ -50,8 +50,8 @@ morgan_calc_beta(struct stepper_kinematics *sk, struct move *m
     struct morgan_stepper *ms = container_of(sk, struct morgan_stepper, sk);
 
     // *** For Faultfinding: Normally the next line is not needed ***
-    ms->beta = acos((SQ(c.x) + SQ(c.y) - ms->link_a2 - ms->link_b2)
-        / (2 * ms->link_a2 * ms->link_b2));
+    //ms->beta = acos((SQ(c.x) + SQ(c.y) - ms->link_a2 - ms->link_b2)
+    //    / (2 * ms->link_a2 * ms->link_b2));
     //ms->alpha = atan((c.y / c.x) - atan((ms->link_b * sin(ms->beta))
     //    / (ms->link_a + ms->link_b * cos(ms->beta))));
 
