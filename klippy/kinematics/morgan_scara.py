@@ -12,7 +12,7 @@ class MorganScaraKinematics:
         rail_a = stepper.PrinterRail(stepper_configs[0],
                                      #need_position_minmax = True,
                                      units_in_radians = True)
-        a_endstop = rail_a.get_homing_info().position_endstop
+        #a_endstop = rail_a.get_homing_info().position_endstop
         rail_a.setup_itersolve('morgan_scara_stepper_alloc',
                               'a', self.link_a, self.link_b)
 
@@ -20,7 +20,7 @@ class MorganScaraKinematics:
         rail_b = stepper.PrinterRail(stepper_configs[1],
                                      #need_position_minmax = True,
                                      units_in_radians = True)
-        b_endstop = rail_b.get_homing_info().position_endstop
+        #b_endstop = rail_b.get_homing_info().position_endstop
         rail_b.setup_itersolve('morgan_scara_stepper_alloc',
                               'b', self.link_a, self.link_b)
 
@@ -29,7 +29,7 @@ class MorganScaraKinematics:
         rail_z.setup_itersolve('cartesian_stepper_alloc', 'z')
 
         self.steppers = [rail_a, rail_b] + rail_z.get_steppers()
-        self.rails = [rail_a]
+        self.rails = [rail_a, rail_b, rail_z]
 
         config.get_printer().register_event_handler(
             "stepper_enable:motor_off", self._motor_off)
