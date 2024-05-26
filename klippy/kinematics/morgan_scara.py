@@ -4,7 +4,7 @@
 #
 # This file may be distributed under the terms of the GNU GPLv3 license.
 import math, logging
-import stepper, mathutil, chelper
+import stepper, chelper
 
 class MorganScaraKinematics:
     def __init__(self, toolhead, config):
