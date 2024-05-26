@@ -1,27 +1,28 @@
 import math
 import logging
-from stepper import PrinterRail, LookupMultiRail
+import stepper
+#from stepper import PrinterRail, LookupMultiRail
+
 
 class MorganScaraKinematics:
     def __init__(self, toolhead, config):
         # Read config
-        self.inner_arm_length = config.getfloat('inner_arm_length', above=0.)
-        self.outer_arm_length = config.getfloat('outer_arm_length', above=0.)
+        self.link_a = config.getfloat('link_a_length', above=0.)
+        self.link_b = config.getfloat('link_b_length', above=0.)
         stepper_configs = [config.getsection('stepper_' + s) for s in 'abz']
 
-        # Inner arm
-        rail_a = PrinterRail(stepper_configs[0], units_in_radians=True)
-        a_endstop = rail_a.get_homing_info().position_endstop
+        # Link A (proximal arm segment)
+        rail_a = stepper.PrinterStepper(stepper_configs[0], units_in_radians=True)
         rail_a.setup_itersolve('morgan_scara_stepper_alloc',
-                              'a', self.inner_arm_length, self.outer_arm_length)
+                              'a', self.link_a, self.link_b)
 
-        # Outer arm
-        rail_b = PrinterRail(stepper_configs[1], units_in_radians=True)
+        # Link B (distal arm segment)
+        rail_b = stepper.PrinterStepper(stepper_configs[1], units_in_radians=True)
         rail_b.setup_itersolve('morgan_scara_stepper_alloc',
-                              'b', self.inner_arm_length, self.outer_arm_length)
+                              'b', self.link_a, self.link_b)
 
         # Elevator
-        rail_z = LookupMultiRail(stepper_configs[2])
+        rail_z = stepper.LookupMultiRail(stepper_configs[2])
         rail_z.setup_itersolve('cartesian_stepper_alloc', 'z')
 
         self.steppers = [rail_a, rail_b] + rail_z.get_steppers()
@@ -47,12 +48,13 @@ class MorganScaraKinematics:
         # Setup boundary checks
         self.need_home = True
         self.limit_xy_magnitude = (
-            config.getfloat('min_base_distance', 10., above=0.),
-            self.inner_arm_length + self.outer_arm_length - 1
+            # Distances of less than 45mm can cause collition
+            config.getfloat('min_base_distance', 45., above=0.),
+            self.link_a + self.link_b - 1
         )
 
-        logging.info('SCARA with inner/outer arms {:.1f}/{:.1f}mm'
-                     .format(self.inner_arm_length, self.outer_arm_length))
+        logging.info('SCARA with proximal/distal linkages {:.1f}/{:.1f}mm'
+                     .format(self.link_a, self.link_b))
         logging.info(
             'SCARA with min/max (x,y) distances {:.1f}/{:.1f}mm'
             .format(self.limit_xy_magnitude[0], self.limit_xy_magnitude[1]))
@@ -68,9 +70,9 @@ class MorganScaraKinematics:
         spos = [s.get_tag_position() for s in self.steppers]
         a_angle, b_angle, z = spos
         midpoint = (a_angle - b_angle) / 2.0
-        distance = (self.inner_arm_length * math.cos(midpoint)
-            - math.sqrt(self.outer_arm_length ** 2
-                        - (self.inner_arm_length ** 2) * (math.sin(midpoint) ** 2)))
+        distance = (self.link_a * math.cos(midpoint)
+            - math.sqrt(self.link_b ** 2
+                        - (self.link_a ** 2) * (math.sin(midpoint) ** 2)))
 
         x, y = (math.cos(a_angle - midpoint) * distance,
         math.sin(a_angle - midpoint) * distance)
@@ -99,9 +101,9 @@ class MorganScaraKinematics:
 
         distance = math.sqrt(end_pos[0] ** 2 + end_pos[1] ** 2)
         if distance < self.limit_xy_magnitude[0]:
-            raise homing.EndstopMoveError(end_pos, "(x,y) pos too close to base joint")
+            raise move.move_error(end_pos, "(x,y) pos too close to base joint")
         elif distance >= self.limit_xy_magnitude[1]:
-            raise homing.EndstopMoveError(end_pos, "(x,y) pos exceeds reach of arms")
+            raise move.move_error(end_pos, "(x,y) pos exceeds reach of arms")
         elif not move.axes_d[2]:
             return
         z_ratio = move.move_d / abs(move.axes_d[2])
