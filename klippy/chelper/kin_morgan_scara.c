@@ -13,8 +13,8 @@
 #include "compiler.h"  // __visible
 #include "itersolve.h" // struct stepper_kinematics
 #include "trapq.h"     // move_get_coord
-#define _USE_MATH_DEFINES
-#include <cmath>
+//#define _USE_MATH_DEFINES
+//#include <cmath>
 
 #define SQ(x) ((x) * (x))
 
@@ -79,7 +79,7 @@ struct stepper_kinematics *__visible morgan_scara_stepper_alloc(
         break;
     case 'b':
         ms->sk.calc_position_cb = morgan_calc_beta;    
-    
+        break;
     default:
         break;
     }
