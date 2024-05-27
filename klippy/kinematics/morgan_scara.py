@@ -15,8 +15,8 @@ class MorganScaraKinematics:
         self.dual_carriage_axis = None
         self.dual_carriage_rails = []
         self.rails = [stepper.LookupMultiRail(config.getsection('stepper_' + n))
-                      for n in 'xyz']
-        for rail, axis in zip(self.rails, 'xyz'):
+                      for n in 'abz']
+        for rail, axis in zip(self.rails, 'abz'):
             rail.setup_itersolve('cartesian_stepper_alloc', axis.encode())
         ranges = [r.get_range() for r in self.rails]
         self.axes_min = toolhead.Coord(*[r[0] for r in ranges], e=0.)
@@ -76,19 +76,11 @@ class MorganScaraKinematics:
         # Perform homing
         homing_state.home_rails([rail], forcepos, homepos)
     def home(self, homing_state):
-        # All axes are homed simultaneously
-        homing_state.set_axes([0, 1, 2])
-        forcepos = list(self.home_position)
-        #forcepos[2] = -1.5 * math.sqrt(max(self.arm2)-self.max_xy2)
-        homing_state.home_rails(self.rails, forcepos, self.home_position)
-        
-        # Each axis is homed independently and in order
-        #homing_state.home_rails(self.rails, forcepos, self.home_position)
-        #for axis in homing_state.get_axes():
-        #    if self.dc_module is not None and axis == self.dual_carriage_axis:
-        #        self.dc_module.home(homing_state)
-        #    else:
-        #        self.home_axis(homing_state, axis, self.rails[axis])
+         #for axis in homing_state.get_axes():
+            if self.dc_module is not None and axis == self.dual_carriage_axis:
+                self.dc_module.home(homing_state)
+            else:
+                self.home_axis(homing_state, axis, self.rails[axis])
     def _motor_off(self, print_time):
         self.limits = [(1.0, -1.0)] * 3
     def _check_endstops(self, move):
@@ -115,7 +107,7 @@ class MorganScaraKinematics:
         move.limit_speed(
             self.max_z_velocity * z_ratio, self.max_z_accel * z_ratio)
     def get_status(self, eventtime):
-        axes = [a for a, (l, h) in zip("xyz", self.limits) if l <= h]
+        axes = [a for a, (l, h) in zip("abz", self.limits) if l <= h]
         return {
             'homed_axes': "".join(axes),
             'axis_minimum': self.axes_min,
