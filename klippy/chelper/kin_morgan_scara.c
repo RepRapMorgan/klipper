@@ -30,7 +30,7 @@ morgan_scara_stepper_calc_position(struct stepper_kinematics *sk, struct move *m
 struct stepper_kinematics * __visible
 morgan_scara_stepper_alloc(double arm2, double tower_x, double tower_y)
 {
-    struct delta_stepper *ds = malloc(sizeof(*ds));
+    struct morgan_stepper *ds = malloc(sizeof(*ds));
     memset(ds, 0, sizeof(*ds));
     ds->arm2 = arm2;
     ds->tower_x = tower_x;
