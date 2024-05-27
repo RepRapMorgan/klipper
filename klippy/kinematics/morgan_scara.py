@@ -23,10 +23,10 @@ class MorganScaraKinematics:
         self.rails = [rail_z]
         
         # Create two dummy cartesian kinematics for homing
-        self.printer = config.get_printer()
-        ffi_main, ffi_lib = chelper.get_ffi()
-        self.cartesian_kinematics_L = ffi_main.gc(ffi_lib.cartesian_stepper_alloc('a'), ffi_lib.free)
-        self.cartesian_kinematics_R = ffi_main.gc(ffi_lib.cartesian_stepper_alloc('b'), ffi_lib.free)
+        #self.printer = config.get_printer()
+        #ffi_main, ffi_lib = chelper.get_ffi()
+        #self.cartesian_kinematics_L = ffi_main.gc(ffi_lib.cartesian_stepper_alloc('a'), ffi_lib.free)
+        #self.cartesian_kinematics_R = ffi_main.gc(ffi_lib.cartesian_stepper_alloc('b'), ffi_lib.free)
 
         config.get_printer().register_event_handler(
             "stepper_enable:motor_off", self._motor_off)
@@ -51,13 +51,15 @@ class MorganScaraKinematics:
             toolhead.register_step_generator(s.generate_steps)
 
         # Setup boundary checks
-        self.need_home = True
+        # self.need_home = True
+        self.need_home = False
+        
         # Self Limit prevents collisions with arm hardware
-        self.limit_xy_magnitude = (
+        #self.limit_xy_magnitude = (
             # Distances of less than 45mm can cause collition
-            config.getfloat('min_base_distance', 45., above=0.),
-            self.link_a + self.link_b - 1
-        )
+        #    config.getfloat('min_base_distance', 45., above=0.),
+        #    self.link_a + self.link_b - 1
+        #)
 
         logging.info('SCARA with proximal/distal linkages {:.1f}/{:.1f}mm'
                      .format(self.link_a, self.link_b))
@@ -92,20 +94,22 @@ class MorganScaraKinematics:
         self.need_home = True
 
     def home(self, homing_state):
-        kinematics = [self.cartesian_kinematics_L, self.cartesian_kinematics_R, self.rails[2]]
-        prev_sks    = [stepper.set_stepper_kinematics(kinematic)
-            for stepper, kinematic in zip(self.steppers, kinematics)]
+        # no home troubleshooting
+        
+        #kinematics = [self.cartesian_kinematics_L, self.cartesian_kinematics_R, self.rails[2]]
+        #prev_sks    = [stepper.set_stepper_kinematics(kinematic)
+        #    for stepper, kinematic in zip(self.steppers, kinematics)]
 
         # home
-        rails = [self.rails[0], self.rails[1], self.rails[2]]
-        homing_state.set_axes([0, 1, 2])
-        forcepos = list(self.home_position)
-        forcepos[2] = -1.
-        homing_state.home_rails(rails, forcepos, self.home_position)
+        #rails = [self.rails[0], self.rails[1], self.rails[2]]
+        #homing_state.set_axes([0, 1, 2])
+        #forcepos = list(self.home_position)
+        #forcepos[2] = -1.
+        #homing_state.home_rails(rails, forcepos, self.home_position)
 
         # swap back to original kinematics
-        for stepper, prev_sk in zip(self.steppers, prev_sks):
-            stepper.set_stepper_kinematics(prev_sk)
+        #for stepper, prev_sk in zip(self.steppers, prev_sks):
+        #    stepper.set_stepper_kinematics(prev_sk)
             # do kinematic math to figure out what x,y the home position actually is, and set it
             #self.toolhead.set_position( [x, y, 0, 0], (0, 1))
         # All axes are homed simultaneously
