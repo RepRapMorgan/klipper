@@ -22,22 +22,7 @@ class MorganScaraKinematics:
         self.axes_min = toolhead.Coord(*[r[0] for r in ranges], e=0.)
         self.axes_max = toolhead.Coord(*[r[1] for r in ranges], e=0.)
         self.dc_module = None
-        if config.has_section('dual_carriage'):
-            dc_config = config.getsection('dual_carriage')
-            dc_axis = dc_config.getchoice('axis', {'x': 'x', 'y': 'y'})
-            self.dual_carriage_axis = {'x': 0, 'y': 1}[dc_axis]
-            # setup second dual carriage rail
-            self.rails.append(stepper.LookupMultiRail(dc_config))
-            self.rails[3].setup_itersolve('cartesian_stepper_alloc',
-                                          dc_axis.encode())
-            dc_rail_0 = idex_modes.DualCarriagesRail(
-                    self.rails[self.dual_carriage_axis],
-                    axis=self.dual_carriage_axis, active=True)
-            dc_rail_1 = idex_modes.DualCarriagesRail(
-                    self.rails[3], axis=self.dual_carriage_axis, active=False)
-            self.dc_module = idex_modes.DualCarriages(
-                    dc_config, dc_rail_0, dc_rail_1,
-                    axis=self.dual_carriage_axis)
+        
         for s in self.get_steppers():
             s.set_trapq(toolhead.get_trapq())
             toolhead.register_step_generator(s.generate_steps)
@@ -91,12 +76,19 @@ class MorganScaraKinematics:
         # Perform homing
         homing_state.home_rails([rail], forcepos, homepos)
     def home(self, homing_state):
+        # All axes are homed simultaneously
+        homing_state.set_axes([0, 1, 2])
+        forcepos = list(self.home_position)
+        #forcepos[2] = -1.5 * math.sqrt(max(self.arm2)-self.max_xy2)
+        homing_state.home_rails(self.rails, forcepos, self.home_position)
+        
         # Each axis is homed independently and in order
-        for axis in homing_state.get_axes():
-            if self.dc_module is not None and axis == self.dual_carriage_axis:
-                self.dc_module.home(homing_state)
-            else:
-                self.home_axis(homing_state, axis, self.rails[axis])
+        #homing_state.home_rails(self.rails, forcepos, self.home_position)
+        #for axis in homing_state.get_axes():
+        #    if self.dc_module is not None and axis == self.dual_carriage_axis:
+        #        self.dc_module.home(homing_state)
+        #    else:
+        #        self.home_axis(homing_state, axis, self.rails[axis])
     def _motor_off(self, print_time):
         self.limits = [(1.0, -1.0)] * 3
     def _check_endstops(self, move):
