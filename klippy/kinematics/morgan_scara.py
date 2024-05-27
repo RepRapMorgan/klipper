@@ -25,8 +25,8 @@ class MorganScaraKinematics:
         # Create two dummy cartesian kinematics for homing
         self.printer = config.get_printer()
         ffi_main, ffi_lib = chelper.get_ffi()
-        self.cartesian_kinematics_L = ffi_main.gc(ffi_lib.cartesian_stepper_alloc('x'), ffi_lib.free)
-        self.cartesian_kinematics_R = ffi_main.gc(ffi_lib.cartesian_stepper_alloc('y'), ffi_lib.free)
+        self.cartesian_kinematics_L = ffi_main.gc(ffi_lib.cartesian_stepper_alloc('a'), ffi_lib.free)
+        self.cartesian_kinematics_R = ffi_main.gc(ffi_lib.cartesian_stepper_alloc('b'), ffi_lib.free)
 
         config.get_printer().register_event_handler(
             "stepper_enable:motor_off", self._motor_off)
@@ -92,7 +92,7 @@ class MorganScaraKinematics:
         self.need_home = True
 
     def home(self, homing_state):
-        kinematics = [self.cartesian_kinematics_L, self.cartesian_kinematics_R]
+        kinematics = [self.cartesian_kinematics_L, self.cartesian_kinematics_R, self.rails[2]]
         prev_sks    = [stepper.set_stepper_kinematics(kinematic)
             for stepper, kinematic in zip(self.steppers, kinematics)]
 
