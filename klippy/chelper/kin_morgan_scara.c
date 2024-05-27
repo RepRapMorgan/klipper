@@ -1,51 +1,41 @@
-// scara kinematics stepper pulse time generation
+// Delta kinematics stepper pulse time generation
 //
 // Copyright (C) 2018-2019  Kevin O'Connor <kevin@koconnor.net>
 //
 // This file may be distributed under the terms of the GNU GPLv3 license.
 
+#include <math.h> // sqrt
+#include <stddef.h> // offsetof
 #include <stdlib.h> // malloc
 #include <string.h> // memset
 #include "compiler.h" // __visible
 #include "itersolve.h" // struct stepper_kinematics
-#include "pyhelper.h" // errorf
 #include "trapq.h" // move_get_coord
 
-static double
-scara_stepper_x_calc_position(struct stepper_kinematics *sk, struct move *m
-                             , double move_time)
-{
-    return move_get_coord(m, move_time).x;
-}
+struct morgan_stepper {
+    struct stepper_kinematics sk;
+    double arm2, tower_x, tower_y;
+};
 
 static double
-scara_stepper_y_calc_position(struct stepper_kinematics *sk, struct move *m
-                             , double move_time)
+morgan_scara_stepper_calc_position(struct stepper_kinematics *sk, struct move *m
+                            , double move_time)
 {
-    return move_get_coord(m, move_time).y;
-}
-
-static double
-scara_stepper_z_calc_position(struct stepper_kinematics *sk, struct move *m
-                             , double move_time)
-{
-    return move_get_coord(m, move_time).z;
+    struct morgan_stepper *ds = container_of(sk, struct morgan_stepper, sk);
+    struct coord c = move_get_coord(m, move_time);
+    double dx = ds->tower_x - c.x, dy = ds->tower_y - c.y;
+    return sqrt(ds->arm2 - dx*dx - dy*dy) + c.z;
 }
 
 struct stepper_kinematics * __visible
-morgan_scara_stepper_alloc(char axis)
+morgan_scara_stepper_alloc(double arm2, double tower_x, double tower_y)
 {
-    struct stepper_kinematics *sk = malloc(sizeof(*sk));
-    memset(sk, 0, sizeof(*sk));
-    if (axis == 'x') {
-        sk->calc_position_cb = scara_stepper_x_calc_position;
-        sk->active_flags = AF_X;
-    } else if (axis == 'y') {
-        sk->calc_position_cb = scara_stepper_y_calc_position;
-        sk->active_flags = AF_Y;
-    } else if (axis == 'z') {
-        sk->calc_position_cb = scara_stepper_z_calc_position;
-        sk->active_flags = AF_Z;
-    }
-    return sk;
+    struct delta_stepper *ds = malloc(sizeof(*ds));
+    memset(ds, 0, sizeof(*ds));
+    ds->arm2 = arm2;
+    ds->tower_x = tower_x;
+    ds->tower_y = tower_y;
+    ds->sk.calc_position_cb = morgan_scara_stepper_calc_position;
+    ds->sk.active_flags = AF_X | AF_Y | AF_Z;
+    return &ds->sk;
 }
