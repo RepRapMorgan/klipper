@@ -46,10 +46,10 @@ static double
 morgan_calc_beta(struct stepper_kinematics *sk, struct move *m
                              , double move_time)
 {
+    struct morgan_stepper *ms = container_of(sk, struct morgan_stepper, sk);
     struct coord c = move_get_coord(m, move_time);
     ms->beta = acos((SQ(c.x) + SQ(c.y) - ms->link_a2 - ms->link_b2)
         / (2 * ms->link_a2 * ms->link_b2));
-    
     // return the beta value already calculated in morgan_calc_alpha()
     return ms->beta;
 }
