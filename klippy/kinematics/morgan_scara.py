@@ -113,10 +113,10 @@ class MorganScaraKinematics:
             # do kinematic math to figure out what x,y the home position actually is, and set it
             #self.toolhead.set_position( [x, y, 0, 0], (0, 1))
         # All axes are homed simultaneously
-        #homing_state.set_axes([0, 1, 2])
-        #forcepos = list(self.home_position)
-        #forcepos[2] = -1.
-        #homing_state.home_rails(self.rails, forcepos, self.home_position)
+        homing_state.set_axes([2])
+        forcepos = list(self.home_position)
+        forcepos[2] = -1.
+        homing_state.home_rails(self.rails, forcepos, self.home_position)
 
     def check_move(self, move):
         end_pos = move.end_pos
