@@ -55,11 +55,11 @@ class MorganScaraKinematics:
         self.need_home = False
         
         # Self Limit prevents collisions with arm hardware
-        #self.limit_xy_magnitude = (
+        self.limit_xy_magnitude = (
             # Distances of less than 45mm can cause collition
-        #    config.getfloat('min_base_distance', 45., above=0.),
-        #    self.link_a + self.link_b - 1
-        #)
+            config.getfloat('min_base_distance', 45., above=0.),
+            self.link_a + self.link_b - 1
+        )
 
         logging.info('SCARA with proximal/distal linkages {:.1f}/{:.1f}mm'
                      .format(self.link_a, self.link_b))
@@ -95,6 +95,10 @@ class MorganScaraKinematics:
 
     def home(self, homing_state):
         # no home troubleshooting
+        homing_state.set_axes([2])
+        forcepos = list(self.home_position)
+        forcepos[2] = -1.
+        homing_state.home_rails(self.rails, forcepos, self.home_position)
         
         #kinematics = [self.cartesian_kinematics_L, self.cartesian_kinematics_R, self.rails[2]]
         #prev_sks    = [stepper.set_stepper_kinematics(kinematic)
@@ -113,10 +117,7 @@ class MorganScaraKinematics:
         # do kinematic math to figure out what x,y the home position actually is, and set it
         #    self.toolhead.set_position( [x, y, 0, 0], (0, 1))
         # All axes are homed simultaneously
-        homing_state.set_axes([2])
-        forcepos = list(self.home_position)
-        forcepos[2] = -1.
-        homing_state.home_rails(self.rails, forcepos, self.home_position)
+        
 
     def check_move(self, move):
         end_pos = move.end_pos
