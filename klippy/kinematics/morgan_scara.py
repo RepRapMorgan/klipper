@@ -110,8 +110,8 @@ class MorganScaraKinematics:
         # swap back to original kinematics
         #for stepper, prev_sk in zip(self.steppers, prev_sks):
         #    stepper.set_stepper_kinematics(prev_sk)
-            # do kinematic math to figure out what x,y the home position actually is, and set it
-            #self.toolhead.set_position( [x, y, 0, 0], (0, 1))
+        # do kinematic math to figure out what x,y the home position actually is, and set it
+        #    self.toolhead.set_position( [x, y, 0, 0], (0, 1))
         # All axes are homed simultaneously
         homing_state.set_axes([2])
         forcepos = list(self.home_position)
