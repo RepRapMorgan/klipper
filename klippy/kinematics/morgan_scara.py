@@ -147,7 +147,7 @@ class MorganScaraKinematics:
         if extreme_xy2 > self.slow_xy2:
             r = 0.5
             if extreme_xy2 > self.very_slow_xy2:
-                r = 0.25math.sqrt
+                r = 0.25
             move.limit_speed(self.max_velocity * r, self.max_accel * r)
             limit_xy2 = -1.
         self.limit_xy2 = min(limit_xy2, self.slow_xy2)
