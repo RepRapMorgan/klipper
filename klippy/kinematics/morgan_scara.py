@@ -1,6 +1,7 @@
-# Code for handling the kinematics of linear delta robots
+# Code for handling the kinematics of  Morgan SCARA robots
 #
 # Copyright (C) 2016-2021  Kevin O'Connor <kevin@koconnor.net>
+# Copyright (C) 2024       Quentin Harley <quentin@morgan3dp.com>
 #
 # This file may be distributed under the terms of the GNU GPLv3 license.
 import math, logging
@@ -11,7 +12,7 @@ SLOW_RATIO = 3.
 
 class MorganScaraKinematics:
     def __init__(self, toolhead, config):
-        # Setup tower rails
+        # Setup arm rails
         stepper_configs = [config.getsection('stepper_' + a) for a in 'abz']
         rail_a = stepper.LookupMultiRail(
             stepper_configs[0], need_position_minmax = False)
@@ -50,7 +51,7 @@ class MorganScaraKinematics:
                         math.sin(math.radians(angle)) * radius)
                        for angle in self.angles]
         for r, a, t in zip(self.rails, self.arm2, self.towers):
-            r.setup_itersolve('morgan_stepper_alloc', a, t[0], t[1])
+            r.setup_itersolve('morgan_scara_stepper_alloc', a, t[0], t[1])
         for s in self.get_steppers():
             s.set_trapq(toolhead.get_trapq())
             toolhead.register_step_generator(s.generate_steps)
@@ -146,7 +147,7 @@ class MorganScaraKinematics:
         if extreme_xy2 > self.slow_xy2:
             r = 0.5
             if extreme_xy2 > self.very_slow_xy2:
-                r = 0.25
+                r = 0.25math.sqrt
             move.limit_speed(self.max_velocity * r, self.max_accel * r)
             limit_xy2 = -1.
         self.limit_xy2 = min(limit_xy2, self.slow_xy2)
