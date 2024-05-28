@@ -15,13 +15,10 @@ class MorganScaraKinematics:
         stepper_configs = [config.getsection('stepper_' + a) for a in 'abz']
         rail_a = stepper.LookupMultiRail(
             stepper_configs[0], need_position_minmax = False)
-        a_endstop = rail_a.get_homing_info().position_endstop
         rail_b = stepper.LookupMultiRail(
-            stepper_configs[1], need_position_minmax = False,
-            default_position_endstop=a_endstop)
+            stepper_configs[1], need_position_minmax = False)
         rail_c = stepper.LookupMultiRail(
-            stepper_configs[2], need_position_minmax = False,
-            default_position_endstop=a_endstop)
+            stepper_configs[2], need_position_minmax = False)
         self.rails = [rail_a, rail_b, rail_c]
         config.get_printer().register_event_handler("stepper_enable:motor_off",
                                                     self._motor_off)
@@ -32,12 +29,14 @@ class MorganScaraKinematics:
             above=0., maxval=self.max_velocity)
         self.max_z_accel = config.getfloat('max_z_accel', self.max_accel,
                                           above=0., maxval=self.max_accel)
-        # Read radius and arm lengths
+        # Read arm lengths
+        self.arm_length_a = stepper_configs[0].getfloat('arm_length', above=0.)
+        self.arm_length_b = stepper_configs[1].getfloat('arm_length', above=0.)
+        
         self.radius = radius = config.getfloat('delta_radius', above=0.)
         print_radius = config.getfloat('print_radius', radius, above=0.)
-        arm_length_a = stepper_configs[0].getfloat('arm_length', above=radius)
         self.arm_lengths = arm_lengths = [
-            sconfig.getfloat('arm_length', arm_length_a, above=radius)
+            sconfig.getfloat('arm_length', self.arm_length_a, above=radius)
             for sconfig in stepper_configs]
         self.arm2 = [arm**2 for arm in arm_lengths]
         self.abs_endstops = [(rail.get_homing_info().position_endstop
@@ -51,7 +50,7 @@ class MorganScaraKinematics:
                         math.sin(math.radians(angle)) * radius)
                        for angle in self.angles]
         for r, a, t in zip(self.rails, self.arm2, self.towers):
-            r.setup_itersolve('delta_stepper_alloc', a, t[0], t[1])
+            r.setup_itersolve('morgan_stepper_alloc', a, t[0], t[1])
         for s in self.get_steppers():
             s.set_trapq(toolhead.get_trapq())
             toolhead.register_step_generator(s.generate_steps)
@@ -231,7 +230,7 @@ class MorganScaraCalibration:
         gcode.respond_info(
             "stepper_a: position_endstop: %.6f angle: %.6f arm_length: %.6f\n"
             "stepper_b: position_endstop: %.6f angle: %.6f arm_length: %.6f\n"
-            "stepper_c: position_endstop: %.6f angle: %.6f arm_length: %.6f\n"
+            "stepper_z: position_endstop: %.6f angle: %.6f arm_length: %.6f\n"
             "delta_radius: %.6f"
             % (self.endstops[0], self.angles[0], self.arms[0],
                self.endstops[1], self.angles[1], self.arms[1],
