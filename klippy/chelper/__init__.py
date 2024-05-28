@@ -125,9 +125,14 @@ defs_kin_deltesian = """
         , double arm_x);
 """
 
+#defs_kin_morgan_scara = """
+#    struct stepper_kinematics *morgan_scara_stepper_alloc(
+#        char axis, double link_a_length, double link_b_length);
+#"""
+
 defs_kin_morgan_scara = """
     struct stepper_kinematics *morgan_scara_stepper_alloc(
-        char axis, double link_a_length, double link_b_length);
+        double arm2, double tower_x, double tower_y);
 """
 
 defs_kin_polar = """
