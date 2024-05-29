@@ -45,9 +45,9 @@ class MorganScaraKinematics:
         rail_b.setup_itersolve('morgan_scara_stepper_alloc', 'b', self.L1, self.L2)
         rail_z.setup_itersolve('cartesian_stepper_alloc', b'z')
         
-        #for s in self.get_steppers():
-        #    s.set_trapq(toolhead.get_trapq())
-        #    toolhead.register_step_generator(s.generate_steps)
+        for s in self.get_steppers():
+            s.set_trapq(toolhead.get_trapq())
+            toolhead.register_step_generator(s.generate_steps)
         
         # Setup boundary checks
         #self.need_home = True

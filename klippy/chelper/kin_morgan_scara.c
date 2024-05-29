@@ -5,7 +5,7 @@
 // This file may be distributed under the terms of the GNU GPLv3 license.
 
 #include <math.h> // sqrt
-#include <stddef.h> // offsetof
+//#include <stddef.h> // offsetof
 #include <stdlib.h> // malloc
 #include <string.h> // memset
 #include "compiler.h" // __visible
@@ -34,7 +34,7 @@ morgan_scara_stepper_a_calc_position(struct stepper_kinematics *sk, struct move 
     float theta2 = atan2(sqrt(1 - D * D), D);
 
     // Calculate theta1
-    return atan2(y, x) - atan2(ms->L2 * sin(theta2), ms->L1 + ms->L2 * cos(theta2));
+    return atan2(c.y, c.x) - atan2(ms->L2 * sin(theta2), ms->L1 + ms->L2 * cos(theta2));
 }
 
 static double
@@ -59,7 +59,7 @@ struct stepper_kinematics * __visible
 morgan_scara_stepper_alloc(char type, double L1, double L2)
 {
     struct morgan_stepper *ms = malloc(sizeof(*ms));
-    memset(ms, 0, sizeof(*ds));
+    memset(ms, 0, sizeof(*ms));
     ms->L1 = L1;
     ms->L2 = L2;
     ms->L1_squared = L1 * L1;
