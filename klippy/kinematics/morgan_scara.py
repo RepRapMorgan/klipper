@@ -14,11 +14,11 @@ class MorganScaraKinematics:
         # Setup arm rails
         stepper_configs = [config.getsection('stepper_' + a) for a in 'abz']
         rail_a = stepper.LookupMultiRail(
-            stepper_configs[0], need_position_minmax = False)
+            stepper_configs[0], need_position_minmax = False, units_in_radians=True)
         rail_b = stepper.LookupMultiRail(
-            stepper_configs[1], need_position_minmax = False)
+            stepper_configs[1], need_position_minmax = False, units_in_radians=True)
         rail_z = stepper.LookupMultiRail(
-            stepper_configs[2], need_position_minmax = False)
+            stepper_configs[2], need_position_minmax = False, units_in_radians=False)
 
         self.rails = [rail_a, rail_b, rail_z]
         config.get_printer().register_event_handler("stepper_enable:motor_off",
