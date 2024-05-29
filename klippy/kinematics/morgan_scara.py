@@ -41,8 +41,8 @@ class MorganScaraKinematics:
         #                     for rail, arm2 in zip(self.rails, self.arm2)]
         
         # Setup itersolve for the steppers
-        rail_a.setup_itersolve('morgan_scara_stepper_alloc', 'a', self.L1, self.L2, self.L1SQ, self.L2SQ)
-        rail_b.setup_itersolve('morgan_scara_stepper_alloc', 'b', self.L1, self.L2, self.L1SQ, self.L2SQ)
+        rail_a.setup_itersolve('morgan_scara_stepper_alloc', 'a', self.L1, self.L2)
+        rail_b.setup_itersolve('morgan_scara_stepper_alloc', 'b', self.L1, self.L2)
         rail_z.setup_itersolve('cartesian_stepper_alloc', b'z')
         
         #for s in self.get_steppers():
