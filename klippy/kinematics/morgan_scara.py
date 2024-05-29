@@ -86,20 +86,19 @@ class MorganScaraKinematics:
         pass
     
         # Update internal position state
-        #for rail in self.rails:
-        #    rail.set_position(newpos)
-        #self.limit_xy2 = -1.
-        #if tuple(homing_axes) == (0, 1, 2):
-        #    self.need_home = False
+        for rail in self.rails:
+            rail.set_position(newpos)
+        self.limit_xy2 = -1.
+        if tuple(homing_axes) == (0, 1, 2):
+            self.need_home = False
     
     def home(self, homing_state):
-        pass
         # Define homing behavior
         # All axes are homed simultaneously
-        #homing_state.set_axes([0, 1, 2])
-        #forcepos = list(self.home_position)
+        homing_state.set_axes([0, 1, 2])
+        forcepos = list(self.home_position)
         #forcepos[2] = -1.5 * math.sqrt(max(self.arm2)-self.max_xy2)
-        #homing_state.home_rails(self.rails, forcepos, self.home_position)
+        homing_state.home_rails(self.rails, forcepos, self.home_position)
     
     def _motor_off(self, print_time):
         self.limit_xy2 = -1.
