@@ -49,7 +49,7 @@ class MorganScaraKinematics:
             s.set_trapq(toolhead.get_trapq())
             toolhead.register_step_generator(s.generate_steps)
         
-        # Setup boundary checks
+        # Setup boundary checkss
         #self.need_home = True
         #self.limit_xy2 = -1.
         #self.home_position = tuple(
