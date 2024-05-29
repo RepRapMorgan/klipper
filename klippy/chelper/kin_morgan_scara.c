@@ -1,4 +1,4 @@
-// Delta kinematics stepper pulse time generation
+// Morgan SCARA kinematics stepper pulse time generation
 //
 // Copyright (C) 2018-2019  Kevin O'Connor <kevin@koconnor.net>
 //
@@ -14,28 +14,64 @@
 
 struct morgan_stepper {
     struct stepper_kinematics sk;
-    double arm2, tower_x, tower_y;
+    double L1, L2;
+    double L1_squared, L2_squared;
 };
 
+// This function calculates the position of 
 static double
-morgan_scara_stepper_calc_position(struct stepper_kinematics *sk, struct move *m
+morgan_scara_stepper_a_calc_position(struct stepper_kinematics *sk, struct move *m
                             , double move_time)
 {
-    struct morgan_stepper *ds = container_of(sk, struct morgan_stepper, sk);
+    struct morgan_stepper *ms = container_of(sk, struct morgan_stepper, sk);
     struct coord c = move_get_coord(m, move_time);
-    double dx = ds->tower_x - c.x, dy = ds->tower_y - c.y;
-    return sqrt(ds->arm2 - dx*dx - dy*dy) + c.z;
+
+    // Calculate the distance to the point
+    float r_squared = c.x * c.x + c.y * c.y;
+
+    // Calculate theta2
+    float D = (r_squared - ms->L1_squared - ms->L2_squared) / (2 * ms->L1 * ms->L2);
+    float theta2 = atan2(sqrt(1 - D * D), D);
+
+    // Calculate theta1
+    return atan2(y, x) - atan2(ms->L2 * sin(theta2), ms->L1 + ms->L2 * cos(theta2));
 }
 
-struct stepper_kinematics * __visible
-morgan_scara_stepper_alloc(double arm2, double tower_x, double tower_y)
+static double
+morgan_scara_stepper_b_calc_position(struct stepper_kinematics *sk, struct move *m
+                            , double move_time)
 {
-    struct morgan_stepper *ds = malloc(sizeof(*ds));
-    memset(ds, 0, sizeof(*ds));
-    ds->arm2 = arm2;
-    ds->tower_x = tower_x;
-    ds->tower_y = tower_y;
-    ds->sk.calc_position_cb = morgan_scara_stepper_calc_position;
-    ds->sk.active_flags = AF_X | AF_Y | AF_Z;
-    return &ds->sk;
+    struct morgan_stepper *ms = container_of(sk, struct morgan_stepper, sk);
+    struct coord c = move_get_coord(m, move_time);
+
+    // Calculate the distance to the point
+    float r_squared = c.x * c.x + c.y * c.y;
+
+   // Calculate theta2
+    float D = (r_squared - ms->L1_squared - ms->L2_squared) / (2 * ms->L1 * ms->L2);
+    
+    return atan2(sqrt(1 - D * D), D);
+
+}
+
+
+struct stepper_kinematics * __visible
+morgan_scara_stepper_alloc(char type, double L1, double L2)
+{
+    struct morgan_stepper *ms = malloc(sizeof(*ms));
+    memset(ms, 0, sizeof(*ds));
+    ms->L1 = L1;
+    ms->L2 = L2;
+    ms->L1_squared = L1 * L1;
+    ms->L2_squared = L2 * L2;
+    if (type == 'a') {
+        ms->sk.calc_position_cb = morgan_scara_stepper_a_calc_position;
+    } else if (type == 'b') {
+        ms->sk.calc_position_cb = morgan_scara_stepper_b_calc_position;
+    }    
+
+    // Set the active flags for X and Y moves
+    ms->sk.active_flags = AF_X | AF_Y;
+
+    return &ms->sk;
 }
