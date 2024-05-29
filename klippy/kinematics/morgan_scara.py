@@ -65,7 +65,7 @@ class MorganScaraKinematics:
         # Find the point where an XY move could result in excessive
         # tower movement
         
-        #self.set_position([0., 0., 0.], ())
+        self.set_position([100., 100., 50.], ())
 
     def get_steppers(self):
         # Return a list of steppers involved in the kinematics
