@@ -18,7 +18,7 @@ struct morgan_stepper
     double L1, L2;
     double L1_squared, L2_squared;
     double column_x, column_y;
-    double D_Limit;
+    double D_limit;
 };
 
 // This function calculates the position of
@@ -32,16 +32,16 @@ morgan_scara_stepper_a_calc_position(struct stepper_kinematics *sk, struct move 
     // Morgan zero point is inferred by the column offset position as defined by the user
     c.x -= ms->column_x;
     c.y -= ms->column_y;
-    
+
     // Calculate the distance to the point
     double r_squared = c.x * c.x + c.y * c.y;
 
     // Calculate theta2
     double D = (r_squared - ms->L1_squared - ms->L2_squared) / (2 * ms->L1 * ms->L2);
-    if (D > ms->D_Limit)
-        D = ms->D_Limit;
-    else if (D < -ms->D_Limit)
-        D = -ms->D_Limit;
+    if (D > ms->D_limit)
+        D = ms->D_limit;
+    else if (D < -ms->D_limit)
+        D = -ms->D_limit;
 
     double theta2 = atan2(sqrt(1 - D * D), D);
 
@@ -59,14 +59,16 @@ morgan_scara_stepper_b_calc_position(struct stepper_kinematics *sk, struct move 
     // Morgan zero point is inferred by the column offset position as defined by the user
     c.x -= ms->column_x;
     c.y -= ms->column_y;
-    
+
     // Calculate the distance to the point
     double r_squared = c.x * c.x + c.y * c.y;
 
     // Calculate theta2
     double D = (r_squared - ms->L1_squared - ms->L2_squared) / (2 * ms->L1 * ms->L2);
-
-
+    if (D > ms->D_limit)
+        D = ms->D_limit;
+    else if (D < -ms->D_limit)
+        D = -ms->D_limit;
 
     return atan2(sqrt(1 - D * D), D);
 }
