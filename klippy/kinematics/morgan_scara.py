@@ -32,6 +32,7 @@ class MorganScaraKinematics:
         printer_config = config.getsection('printer')    
         self.column_x = printer_config.getfloat('column_x', default=190.)
         self.column_y = printer_config.getfloat('column_y', below=0., default=-70.)
+        self.D_limit = printer_config.getfloat('D_limit', default=0.95)
                
         #self.abs_endstops = [(rail.get_homing_info().position_endstop
         #                      + math.sqrt(arm2 - radius**2))
@@ -39,9 +40,9 @@ class MorganScaraKinematics:
         
         # Setup itersolve for the steppers
         rail_a.setup_itersolve('morgan_scara_stepper_alloc', 'a', 
-                                self.L1, self.L2, self.column_x, self.column_y)
+                                self.L1, self.L2, self.column_x, self.column_y, self.D_limit)
         rail_b.setup_itersolve('morgan_scara_stepper_alloc', 'b', 
-                                self.L1, self.L2, self.column_x, self.column_y)
+                                self.L1, self.L2, self.column_x, self.column_y, self.D_limit)
         rail_z.setup_itersolve('cartesian_stepper_alloc', b'z')
         
         for s in self.get_steppers():

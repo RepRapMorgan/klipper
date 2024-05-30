@@ -18,6 +18,7 @@ struct morgan_stepper
     double L1, L2;
     double L1_squared, L2_squared;
     double column_x, column_y;
+    double D_Limit;
 };
 
 // This function calculates the position of
@@ -37,6 +38,11 @@ morgan_scara_stepper_a_calc_position(struct stepper_kinematics *sk, struct move 
 
     // Calculate theta2
     double D = (r_squared - ms->L1_squared - ms->L2_squared) / (2 * ms->L1 * ms->L2);
+    if (D > ms->D_Limit)
+        D = ms->D_Limit;
+    else if (D < -ms->D_Limit)
+        D = -ms->D_Limit;
+
     double theta2 = atan2(sqrt(1 - D * D), D);
 
     // Calculate theta1
@@ -60,11 +66,13 @@ morgan_scara_stepper_b_calc_position(struct stepper_kinematics *sk, struct move 
     // Calculate theta2
     double D = (r_squared - ms->L1_squared - ms->L2_squared) / (2 * ms->L1 * ms->L2);
 
+
+
     return atan2(sqrt(1 - D * D), D);
 }
 
 struct stepper_kinematics *__visible
-morgan_scara_stepper_alloc(char type, double L1, double L2, double column_x, double column_y)
+morgan_scara_stepper_alloc(char type, double L1, double L2, double column_x, double column_y, double D_limit)
 {
     struct morgan_stepper *ms = malloc(sizeof(*ms));
     memset(ms, 0, sizeof(*ms));
@@ -74,6 +82,7 @@ morgan_scara_stepper_alloc(char type, double L1, double L2, double column_x, dou
     ms->L2_squared = L2 * L2;
     ms->column_x = column_x;
     ms->column_y = column_y;
+    ms->D_limit = D_limit;
 
     if (type == 'a')
     {
