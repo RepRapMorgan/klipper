@@ -139,3 +139,6 @@ class MorganScaraKinematics:
 
     def get_calibration(self):
         pass
+    
+def load_kinematics(toolhead, config):
+    return MorganScaraKinematics(toolhead, config)
