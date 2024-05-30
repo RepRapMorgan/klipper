@@ -17,6 +17,7 @@ struct morgan_stepper
     struct stepper_kinematics sk;
     double L1, L2;
     double L1_squared, L2_squared;
+    double column_x, column_y;
 };
 
 // This function calculates the position of
@@ -26,6 +27,11 @@ morgan_scara_stepper_a_calc_position(struct stepper_kinematics *sk, struct move 
     struct morgan_stepper *ms = container_of(sk, struct morgan_stepper, sk);
     struct coord c = move_get_coord(m, move_time);
 
+    // SCARA zero point is at the center of the column
+    // Morgan zero point is inferred by the column offset position as defined by the user
+    c.x -= ms->column_x;
+    c.y -= ms->column_y;
+    
     // Calculate the distance to the point
     double r_squared = c.x * c.x + c.y * c.y;
 
@@ -53,7 +59,7 @@ morgan_scara_stepper_b_calc_position(struct stepper_kinematics *sk, struct move 
 }
 
 struct stepper_kinematics *__visible
-morgan_scara_stepper_alloc(char type, double L1, double L2)
+morgan_scara_stepper_alloc(char type, double L1, double L2, double column_x, double column_y)
 {
     struct morgan_stepper *ms = malloc(sizeof(*ms));
     memset(ms, 0, sizeof(*ms));
@@ -61,6 +67,9 @@ morgan_scara_stepper_alloc(char type, double L1, double L2)
     ms->L2 = L2;
     ms->L1_squared = L1 * L1;
     ms->L2_squared = L2 * L2;
+    ms->column_x = column_x;
+    ms->column_y = column_y;
+
     if (type == 'a')
     {
         ms->sk.calc_position_cb = morgan_scara_stepper_a_calc_position;
