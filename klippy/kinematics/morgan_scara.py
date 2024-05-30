@@ -4,8 +4,8 @@
 # Copyright (C) 2024       Quentin Harley <quentin@morgan3dp.com>
 #
 # This file may be distributed under the terms of the GNU GPLv3 license.
-import math, logging
-import stepper, mathutil
+import math, #logging
+import stepper, #mathutil, chelper
 
 class MorganScaraKinematics:
     # This is a class for handling the kinematics of Morgan SCARA robots.
@@ -21,15 +21,8 @@ class MorganScaraKinematics:
             stepper_configs[2], units_in_radians=False)
 
         self.rails = [rail_a, rail_b, rail_z]
-        config.get_printer().register_event_handler("stepper_enable:motor_off",
-                                                    self._motor_off)
-        # Setup max velocity
-        self.max_velocity, self.max_accel = toolhead.get_max_velocity()
-        self.max_z_velocity = config.getfloat(
-            'max_z_velocity', self.max_velocity,
-            above=0., maxval=self.max_velocity)
-        self.max_z_accel = config.getfloat('max_z_accel', self.max_accel,
-                                          above=0., maxval=self.max_accel)
+        
+        
         # Read arm lengths
         self.L1 = stepper_configs[0].getfloat('arm_length', above=0.)
         self.L2 = stepper_configs[1].getfloat('arm_length', above=0.)
@@ -37,48 +30,44 @@ class MorganScaraKinematics:
         self.L2SQ = self.L2**2
         
         printer_config = config.getsection('printer')    
-        # Set arm column position using the print bed as reference.
-        # This is a bit of a hack, but it works well enough.
         self.column_x = printer_config.getfloat('column_x', default=190.)
         self.column_y = printer_config.getfloat('column_y', below=0., default=-70.)
-        
                
         #self.abs_endstops = [(rail.get_homing_info().position_endstop
         #                      + math.sqrt(arm2 - radius**2))
         #                     for rail, arm2 in zip(self.rails, self.arm2)]
         
         # Setup itersolve for the steppers
-        rail_a.setup_itersolve('morgan_scara_stepper_alloc', 'a', self.L1, self.L2, self.column_x, self.column_y)
-        rail_b.setup_itersolve('morgan_scara_stepper_alloc', 'b', self.L1, self.L2, self.column_x, self.column_y)
+        rail_a.setup_itersolve('morgan_scara_stepper_alloc', 'a', 
+                                self.L1, self.L2, self.column_x, self.column_y)
+        rail_b.setup_itersolve('morgan_scara_stepper_alloc', 'b', 
+                                self.L1, self.L2, self.column_x, self.column_y)
         rail_z.setup_itersolve('cartesian_stepper_alloc', b'z')
         
         for s in self.get_steppers():
             s.set_trapq(toolhead.get_trapq())
             toolhead.register_step_generator(s.generate_steps)
+            config.get_printer().register_event_handler("stepper_enable:motor_off",
+                                                    self._motor_off)
         
-        # Setup boundary checkss
+        # Setup max velocity
+        self.max_velocity, self.max_accel = toolhead.get_max_velocity()
+        self.max_z_velocity = config.getfloat(
+            'max_z_velocity', self.max_velocity,
+            above=0., maxval=self.max_velocity)
+        self.max_z_accel = config.getfloat('max_z_accel', self.max_accel,
+                                          above=0., maxval=self.max_accel)
+        
+        # Setup boundary checks
         #self.need_home = True
-        #self.limit_xy2 = -1.
-        #self.home_position = tuple(
-        #    self._actuator_to_cartesian(self.abs_endstops))
-        #self.max_z = min([rail.get_homing_info().position_endstop
-        #                  for rail in self.rails])
-        #self.min_z = config.getfloat('minimum_z_position', 0, maxval=self.max_z)
-        #self.limit_z = min([ep - arm
-        #                    for ep, arm in zip(self.abs_endstops, arm_lengths)])
-        #logging.info(
-        #    "MORGAN test (Delta) max build height %.2fmm (radius tapered above %.2fmm)"
-        #    % (self.max_z, self.limit_z))
-        # Find the point where an XY move could result in excessive
-        # tower movement
         
-        self.set_position([100., 100., 50.], ())
+        
+        self.set_position([0., 0., 0.], ())
 
     def get_steppers(self):
         # Return a list of steppers involved in the kinematics
         return [s for rail in self.rails for s in rail.get_steppers()]
-    
-    
+       
     def calc_position(self, stepper_positions):
         # Convert stepper positions to Cartesian coordinates (Forward Kinematics)
         theta1 = stepper_positions[self.steppers[0].get_name()]
@@ -88,7 +77,11 @@ class MorganScaraKinematics:
         y_pos = self.L1 * math.sin(theta1) + self.L2 * math.sin(theta1 + theta2)
         return [x_pos, y_pos, z_pos]
     
-    
+    def calc_home_position(self, stepper_configs[])
+        # Calculate the home position
+
+        return [home_x, home_y, home_z]
+
     def set_position(self, newpos, homing_axes):
         pass
     
@@ -119,9 +112,7 @@ class MorganScaraKinematics:
         # Return kinematic status
         return {
             'homed_axes': '' if self.need_home else 'xyz',
-            'axis_minimum': self.axes_min,
-            'axis_maximum': self.axes_max,
-            'cone_start_z': self.limit_z,
+            
         }
         
     def inverse_kinematics(self, x, y):
@@ -142,13 +133,11 @@ class MorganScaraKinematics:
         theta2 = math.atan2(math.sqrt(1 - D**2), D)
         
         # Calculate theta1
-        theta1 = math.atan2(y, x) - math.atan2(self.L2 * math.sin(theta2), self.L1 + self.L2 * math.cos(theta2))
+        theta1 = math.atan2(y, x) - math.atan2(self.L2 * math.sin(theta2),
+                                               self.L1 + self.L2 * math.cos(theta2))
 
         # Return the angles in steps
         return [theta1 * self.steps_per_mm, theta2 * self.steps_per_mm]
 
     def get_calibration(self):
         pass
-
-def load_kinematics(toolhead, config):
-    return MorganScaraKinematics(toolhead, config)
