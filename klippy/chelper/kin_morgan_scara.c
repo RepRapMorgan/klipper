@@ -49,6 +49,11 @@ morgan_scara_stepper_b_calc_position(struct stepper_kinematics *sk, struct move 
     struct morgan_stepper *ms = container_of(sk, struct morgan_stepper, sk);
     struct coord c = move_get_coord(m, move_time);
 
+    // SCARA zero point is at the center of the column
+    // Morgan zero point is inferred by the column offset position as defined by the user
+    c.x -= ms->column_x;
+    c.y -= ms->column_y;
+    
     // Calculate the distance to the point
     double r_squared = c.x * c.x + c.y * c.y;
 
