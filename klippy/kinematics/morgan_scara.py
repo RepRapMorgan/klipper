@@ -77,10 +77,10 @@ class MorganScaraKinematics:
         y_pos = self.L1 * math.sin(theta1) + self.L2 * math.sin(theta1 + theta2)
         return [x_pos, y_pos, z_pos]
     
-    def calc_home_position(self, stepper_configs[])
+    #def calc_home_position(self, stepper_configs[])
         # Calculate the home position
 
-        return [home_x, home_y, home_z]
+    #    return [home_x, home_y, home_z]
 
     def set_position(self, newpos, homing_axes):
         pass
