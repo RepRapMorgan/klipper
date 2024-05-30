@@ -4,8 +4,8 @@
 # Copyright (C) 2024       Quentin Harley <quentin@morgan3dp.com>
 #
 # This file may be distributed under the terms of the GNU GPLv3 license.
-import math, #logging
-import stepper, #mathutil, chelper
+import math #,logging
+import stepper #,mathutil, chelper
 
 class MorganScaraKinematics:
     # This is a class for handling the kinematics of Morgan SCARA robots.
