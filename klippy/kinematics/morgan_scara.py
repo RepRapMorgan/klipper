@@ -60,7 +60,7 @@ class MorganScaraKinematics:
                                           above=0., maxval=self.max_accel)
         
         # Setup boundary checks
-        self.need_home = True
+        self.need_home = False
         self.home_position = self.calc_home_position(stepper_configs)
         self.set_position([0., 0., 0.], ())
 
@@ -78,7 +78,7 @@ class MorganScaraKinematics:
         return [x_pos, y_pos, z_pos]
     
     def calc_home_position(self, stepper_configs):
-        return [config.setfloat('home_position', 0.) for config in stepper_configs]
+        return [config.getfloat('home_position', 0.) for config in stepper_configs]
 
     def set_position(self, newpos, homing_axes):
         # Update internal position state
@@ -98,7 +98,7 @@ class MorganScaraKinematics:
     
     def _motor_off(self, print_time):
         #self.limit_xy2 = -1.
-        self.need_home = True
+        self.need_home = False
     
     def check_move(self, move):
         # Validate if the move is within kinematic limits
