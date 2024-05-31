@@ -29,7 +29,7 @@ class MorganScaraKinematics:
         self.l1_sq = self.l1**2
         self.l2_sq = self.l2**2
 
-        printer_config = config.getsection('printer')    
+        printer_config = config.getsection('printer')
         self.column_x = printer_config.getfloat('column_x', default=190.)
         self.column_y = printer_config.getfloat(
             'column_y', below=0., default=-70.)
@@ -40,9 +40,9 @@ class MorganScaraKinematics:
         #                     for rail, arm2 in zip(self.rails, self.arm2)]
 
         # Setup itersolve for the steppers
-        rail_a.setup_itersolve('morgan_scara_stepper_alloc', 'a', 
+        rail_a.setup_itersolve('morgan_scara_stepper_alloc', 'a',
             self.l1, self.l2, self.column_x, self.column_y, self.d_limit)
-        rail_b.setup_itersolve('morgan_scara_stepper_alloc', 'b', 
+        rail_b.setup_itersolve('morgan_scara_stepper_alloc', 'b',
             self.l1, self.l2, self.column_x, self.column_y, self.d_limit)
         rail_z.setup_itersolve('cartesian_stepper_alloc', b'z')
 

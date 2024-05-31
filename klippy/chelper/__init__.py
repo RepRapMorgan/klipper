@@ -132,7 +132,8 @@ defs_kin_deltesian = """
 
 defs_kin_morgan_scara = """
     struct stepper_kinematics *morgan_scara_stepper_alloc(
-        char type, double L1, double L2, double column_x, double column_y, double D_limit);
+        char type, double L1, double L2,
+        double column_x, double column_y, double D_limit);
 """
 
 defs_kin_polar = """
