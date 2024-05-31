@@ -36,17 +36,22 @@ morgan_scara_stepper_a_calc_position(struct stepper_kinematics *sk, struct move 
     // Calculate the distance to the point
     double r_squared = c.x * c.x + c.y * c.y;
 
-    // Calculate theta2
-    double D = (r_squared - ms->L1_squared - ms->L2_squared) / (2 * ms->L1 * ms->L2);
+    // Calculate psi
+    double D = (r_squared - ms->L1_squared - ms->L2_squared) / (2.0 * ms->L1 * ms->L2);
     if (D > ms->D_limit)
         D = ms->D_limit;
     else if (D < -ms->D_limit)
         D = -ms->D_limit;
 
-    double theta2 = atan2(sqrt(1 - D * D), D);
+    // Psi in Morgan kinematics: Distal arm is always on the right side of the proximal arm
+    double psi = atan2(sqrt(1 - D * D), D);
+    if (psi > 0)
+        psi *= -1;
 
-    // Calculate theta1
-    return atan2(c.y, c.x) - atan2(ms->L2 * sin(theta2), ms->L1 + ms->L2 * cos(theta2));
+    // Calculate theta and return the sum of the two angles
+    double theta = atan2(c.y, c.x) - atan2(ms->L2 * sin(psi), ms->L1 + ms->L2 * cos(psi));
+
+    return theta;
 }
 
 static double
@@ -63,14 +68,23 @@ morgan_scara_stepper_b_calc_position(struct stepper_kinematics *sk, struct move 
     // Calculate the distance to the point
     double r_squared = c.x * c.x + c.y * c.y;
 
-    // Calculate theta2
-    double D = (r_squared - ms->L1_squared - ms->L2_squared) / (2 * ms->L1 * ms->L2);
+    // Calculate psi
+    double D = (r_squared - ms->L1_squared - ms->L2_squared) / (2.0 * ms->L1 * ms->L2);
     if (D > ms->D_limit)
         D = ms->D_limit;
     else if (D < -ms->D_limit)
         D = -ms->D_limit;
 
-    return atan2(sqrt(1 - D * D), D);
+    // Psi in Morgan kinematics: Distal arm is always on the right side of the proximal arm
+    double psi = atan2(sqrt(1 - D * D), D);
+    if (psi > 0)
+        psi *= -1;
+
+    // Calculate theta and return the sum of the two angles
+    double theta = atan2(c.y, c.x) - atan2(ms->L2 * sin(psi), ms->L1 + ms->L2 * cos(psi));
+
+    // Return psi, as a sum with theta
+    return (theta + psi); // Morgan kinematics: Distal arm is driven from the base.
 }
 
 struct stepper_kinematics *__visible
