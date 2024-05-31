@@ -50,9 +50,9 @@ morgan_scara_stepper_a_calc_position(struct stepper_kinematics *sk,
     psi = copysign(psi, -1.0); // Negate psi if positive
 
     // Calculate theta
-    double theta = (atan2(y, x) - atan2(ms->L2 * sin(psi),
-                               ms->L1 + ms->L2 * cos(psi)));
-    return theta
+    double theta = atan2(y, x) -
+                   atan2(ms->L2 * sin(psi), ms->L1 + ms->L2 * cos(psi));
+    return theta;
 }
 
 static double
@@ -83,8 +83,8 @@ morgan_scara_stepper_b_calc_position(struct stepper_kinematics *sk,
     psi = copysign(psi, -1.0); // Negate psi if positive
 
     // Calculate theta
-    double theta = (atan2(y, x) - atan2(ms->L2 * sin(psi),
-                               ms->L1 + ms->L2 * cos(psi)));
+    double theta = atan2(y, x) -
+                   atan2(ms->L2 * sin(psi), ms->L1 + ms->L2 * cos(psi));
 
     // Return psi, as a sum with theta
     // Morgan kinematics: Distal arm is driven from the base
