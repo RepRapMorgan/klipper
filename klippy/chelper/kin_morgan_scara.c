@@ -21,7 +21,6 @@ struct morgan_stepper
     double D_limit;
 };
 
-// This function calculates the position of
 static double
 morgan_scara_stepper_a_calc_position(struct stepper_kinematics* sk,
                                      struct move* m, double move_time)
@@ -29,28 +28,18 @@ morgan_scara_stepper_a_calc_position(struct stepper_kinematics* sk,
     struct morgan_stepper* ms = container_of(sk, struct morgan_stepper, sk);
     struct coord c = move_get_coord(m, move_time);
 
-    // SCARA zero point is at the center of the column
-    // Morgan zero point is inferred by the column offset position as defined by
-    // the user
     double x = c.x - ms->column_x;
     double y = c.y - ms->column_y;
 
-    // Calculate the distance to the point
     double r_squared = x * x + y * y;
 
-    // Calculate psi
     double D =
         (r_squared - ms->L1_squared - ms->L2_squared) / (2.0 * ms->L1 * ms->L2);
-    D = fmin(fmax(D, -ms->D_limit),
-             ms->D_limit); // Clamp D to prevent sqrt from returning NaN and
-                           // collisions
+    D = fmin(fmax(D, -ms->D_limit), ms->D_limit);
 
-    // Psi in Morgan kinematics: Distal arm is always on the right side of the
-    // proximal arm
     double psi = atan2(sqrt(1 - D * D), D);
-    psi = copysign(psi, -1.0); // Negate psi if positive
+    psi = copysign(psi, -1.0);
 
-    // Calculate theta
     double theta =
         atan2(y, x) - atan2(ms->L2 * sin(psi), ms->L1 + ms->L2 * cos(psi));
 
@@ -64,33 +53,22 @@ morgan_scara_stepper_b_calc_position(struct stepper_kinematics* sk,
     struct morgan_stepper* ms = container_of(sk, struct morgan_stepper, sk);
     struct coord c = move_get_coord(m, move_time);
 
-    // SCARA zero point is at the center of the column
-    // Morgan zero point is inferred by the column offset position as defined by
-    // the user
     double x = c.x - ms->column_x;
     double y = c.y - ms->column_y;
 
-    // Calculate the distance to the point
     double r_squared = x * x + y * y;
 
-    // Calculate psi
     double D =
         (r_squared - ms->L1_squared - ms->L2_squared) / (2.0 * ms->L1 * ms->L2);
-    D = fmin(fmax(D, -ms->D_limit),
-             ms->D_limit); // Clamp D to prevent sqrt from returning NaN and
-                           // collisions
+    D = fmin(fmax(D, -ms->D_limit), ms->D_limit);
 
-    // Psi in Morgan kinematics: Distal arm is always on the right side of the
-    // proximal arm
     double psi = atan2(sqrt(1 - D * D), D);
-    psi = copysign(psi, -1.0); // Negate psi if positive
+    psi = copysign(psi, -1.0);
 
-    // Calculate theta
     double theta =
         atan2(y, x) - atan2(ms->L2 * sin(psi), ms->L1 + ms->L2 * cos(psi));
 
-    // Return psi, as a sum with theta
-    return theta + psi; // Morgan kinematics: Distal arm is driven from the base
+    return theta + psi;
 }
 
 struct stepper_kinematics* __visible
@@ -107,16 +85,10 @@ morgan_scara_stepper_alloc(char type, double L1, double L2, double column_x,
     ms->column_y = column_y;
     ms->D_limit = D_limit;
 
-    if (type == 'a')
-    {
-        ms->sk.calc_position_cb = morgan_scara_stepper_a_calc_position;
-    }
-    else if (type == 'b')
-    {
-        ms->sk.calc_position_cb = morgan_scara_stepper_b_calc_position;
-    }
+    ms->sk.calc_position_cb = (type == 'a')
+                                  ? morgan_scara_stepper_a_calc_position
+                                  : morgan_scara_stepper_b_calc_position;
 
-    // Set the active flags for X and Y moves
     ms->sk.active_flags = AF_X | AF_Y;
 
     return &ms->sk;
