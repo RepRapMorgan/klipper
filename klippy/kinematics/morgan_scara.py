@@ -44,11 +44,11 @@ class MorganScaraKinematics:
         #                     for rail, arm2 in zip(self.rails, self.arm2)]
 
         # Setup itersolve for the steppers
-        rail_a.setup_itersolve('morgan_scara_stepper_alloc', 'a',
+        self.rails[0].setup_itersolve('morgan_scara_stepper_alloc', 'a',
             self.l1, self.l2, self.column_x, self.column_y, self.d_limit)
-        rail_b.setup_itersolve('morgan_scara_stepper_alloc', 'b',
+        self.rails[1].setup_itersolve('morgan_scara_stepper_alloc', 'b',
             self.l1, self.l2, self.column_x, self.column_y, self.d_limit)
-        rail_z.setup_itersolve('cartesian_stepper_alloc', b'z')
+        self.rails[2].setup_itersolve('cartesian_stepper_alloc', b'z')
 
         for s in self.get_steppers():
             s.set_trapq(toolhead.get_trapq())
@@ -102,6 +102,11 @@ class MorganScaraKinematics:
         logging.info("Mogan home was called")
         self.rails[0].setup_itersolve('cartesian_stepper_alloc', b'a')
         self.rails[1].setup_itersolve('cartesian_stepper_alloc', b'b')
+        
+        for s in self.get_steppers():
+            s.set_trapq(toolhead.get_trapq())
+            toolhead.register_step_generator(s.generate_steps)
+            
         logging.info("Kinematic changed")
         #logging.info(
         #    "Delta max build height %.2fmm (radius tapered above %.2fmm)"
@@ -110,11 +115,16 @@ class MorganScaraKinematics:
         forcepos = list(self.home_position)
         # homing_state.home_rails(self.rails, forcepos, self.home_position)
         logging.info("all done except the actual homing")
+        # Setup itersolve for the steppers
         self.rails[0].setup_itersolve('morgan_scara_stepper_alloc', 'a',
             self.l1, self.l2, self.column_x, self.column_y, self.d_limit)
         self.rails[1].setup_itersolve('morgan_scara_stepper_alloc', 'b',
             self.l1, self.l2, self.column_x, self.column_y, self.d_limit)
-
+        
+        for s in self.get_steppers():
+            s.set_trapq(toolhead.get_trapq())
+            toolhead.register_step_generator(s.generate_steps)
+        
         self.set_position(self.home_position, (0, 1, 2))
         logging.info("Kinematic restored and home position set")
 
