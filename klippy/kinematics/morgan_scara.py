@@ -100,33 +100,11 @@ class MorganScaraKinematics:
         # Define homing behavior
         # All axes are homed simultaneously
         logging.info("Mogan home was called")
-        self.rails[0].setup_itersolve('cartesian_stepper_alloc', b'a')
-        self.rails[1].setup_itersolve('cartesian_stepper_alloc', b'b')
-        
-        for s in self.get_steppers():
-            s.set_trapq(toolhead.get_trapq())
-            toolhead.register_step_generator(s.generate_steps)
-            
-        logging.info("Kinematic changed")
-        #logging.info(
-        #    "Delta max build height %.2fmm (radius tapered above %.2fmm)"
-        #    % (self.max_z, self.limit_z))
         homing_state.set_axes([0, 1, 2])
-        forcepos = list(self.home_position)
-        # homing_state.home_rails(self.rails, forcepos, self.home_position)
-        logging.info("all done except the actual homing")
-        # Setup itersolve for the steppers
-        self.rails[0].setup_itersolve('morgan_scara_stepper_alloc', 'a',
-            self.l1, self.l2, self.column_x, self.column_y, self.d_limit)
-        self.rails[1].setup_itersolve('morgan_scara_stepper_alloc', 'b',
-            self.l1, self.l2, self.column_x, self.column_y, self.d_limit)
-        
-        for s in self.get_steppers():
-            s.set_trapq(toolhead.get_trapq())
-            toolhead.register_step_generator(s.generate_steps)
-        
+        forcepos = [380,200,0]
+        homing_state.home_rails(self.rails, forcepos, self.home_position)
         self.set_position(self.home_position, (0, 1, 2))
-        logging.info("Kinematic restored and home position set")
+        logging.info("Home Done")
 
 
     def _motor_off(self, print_time):
