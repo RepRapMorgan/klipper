@@ -34,6 +34,9 @@ class MorganScaraKinematics:
         self.column_y = printer_config.getfloat(
             'column_y', below=0., default=-70.)
         self.d_limit = printer_config.getfloat('D_limit', default=0.95)
+        
+        # Flag for homing to disable the kinematics
+        self.homing_active = False
 
         #self.abs_endstops = [(rail.get_homing_info().position_endstop
         #                      + math.sqrt(arm2 - radius**2))
@@ -94,6 +97,9 @@ class MorganScaraKinematics:
         # Define homing behavior
         # All axes are homed simultaneously
         logging.info("Mogan home was called")
+        self.rail[0].setup_itersolve('cartesian_stepper_alloc', b'a')
+        self.rail[1].setup_itersolve('cartesian_stepper_alloc', b'b')
+        logging.info("Kinematic changed")
         #logging.info(
         #    "Delta max build height %.2fmm (radius tapered above %.2fmm)"
         #    % (self.max_z, self.limit_z))
@@ -101,6 +107,12 @@ class MorganScaraKinematics:
         #forcepos = list(self.home_position)
         #forcepos[2] = -1.5 * math.sqrt(max(self.arm2)-self.max_xy2)
         #homing_state.home_rails(self.rails, forcepos, self.home_position)
+        self.rail[0].setup_itersolve('morgan_scara_stepper_alloc', 'a',
+            self.l1, self.l2, self.column_x, self.column_y, self.d_limit)
+        self.rail[1].setup_itersolve('morgan_scara_stepper_alloc', 'b',
+            self.l1, self.l2, self.column_x, self.column_y, self.d_limit)
+        logging.info("Kinematic restored")
+        
 
     def _motor_off(self, print_time):
         #self.limit_xy2 = -1.
