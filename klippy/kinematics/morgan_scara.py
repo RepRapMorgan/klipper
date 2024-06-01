@@ -97,8 +97,8 @@ class MorganScaraKinematics:
         # Define homing behavior
         # All axes are homed simultaneously
         logging.info("Mogan home was called")
-        self.rail[0].setup_itersolve('cartesian_stepper_alloc', b'a')
-        self.rail[1].setup_itersolve('cartesian_stepper_alloc', b'b')
+        self.rails[0].setup_itersolve('cartesian_stepper_alloc', b'a')
+        self.rails[1].setup_itersolve('cartesian_stepper_alloc', b'b')
         logging.info("Kinematic changed")
         #logging.info(
         #    "Delta max build height %.2fmm (radius tapered above %.2fmm)"
@@ -107,9 +107,9 @@ class MorganScaraKinematics:
         #forcepos = list(self.home_position)
         #forcepos[2] = -1.5 * math.sqrt(max(self.arm2)-self.max_xy2)
         #homing_state.home_rails(self.rails, forcepos, self.home_position)
-        self.rail[0].setup_itersolve('morgan_scara_stepper_alloc', 'a',
+        self.rails[0].setup_itersolve('morgan_scara_stepper_alloc', 'a',
             self.l1, self.l2, self.column_x, self.column_y, self.d_limit)
-        self.rail[1].setup_itersolve('morgan_scara_stepper_alloc', 'b',
+        self.rails[1].setup_itersolve('morgan_scara_stepper_alloc', 'b',
             self.l1, self.l2, self.column_x, self.column_y, self.d_limit)
         logging.info("Kinematic restored")
         
