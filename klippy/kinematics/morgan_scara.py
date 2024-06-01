@@ -108,8 +108,8 @@ class MorganScaraKinematics:
         #    % (self.max_z, self.limit_z))
         homing_state.set_axes([0, 1, 2])
         forcepos = list(self.home_position)
-        homing_state.home_rails(self.rails, forcepos, self.home_position)
-
+        # homing_state.home_rails(self.rails, forcepos, self.home_position)
+        logging.info("all done except the actual homing")
         self.rails[0].setup_itersolve('morgan_scara_stepper_alloc', 'a',
             self.l1, self.l2, self.column_x, self.column_y, self.d_limit)
         self.rails[1].setup_itersolve('morgan_scara_stepper_alloc', 'b',
