@@ -114,7 +114,9 @@ class MorganScaraKinematics:
             self.l1, self.l2, self.column_x, self.column_y, self.d_limit)
         self.rails[1].setup_itersolve('morgan_scara_stepper_alloc', 'b',
             self.l1, self.l2, self.column_x, self.column_y, self.d_limit)
-        logging.info("Kinematic restored")
+
+        self.set_position(self.home_position, (0, 1, 2))
+        logging.info("Kinematic restored and home position set")
 
 
     def _motor_off(self, print_time):
