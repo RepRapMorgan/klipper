@@ -4,7 +4,7 @@
 # Copyright (C) 2024       Quentin Harley <quentin@morgan3dp.com>
 #
 # This file may be distributed under the terms of the GNU GPLv3 license.
-import math #,logging
+import math ,logging
 import stepper #,mathutil, chelper
 
 class MorganScaraKinematics:
@@ -93,10 +93,14 @@ class MorganScaraKinematics:
     def home(self, homing_state):
         # Define homing behavior
         # All axes are homed simultaneously
-        homing_state.set_axes([0, 1, 2])
-        forcepos = list(self.home_position)
+        logging.info("Mogan home was called")
+        #logging.info(
+        #    "Delta max build height %.2fmm (radius tapered above %.2fmm)"
+        #    % (self.max_z, self.limit_z))
+        #homing_state.set_axes([0, 1, 2])
+        #forcepos = list(self.home_position)
         #forcepos[2] = -1.5 * math.sqrt(max(self.arm2)-self.max_xy2)
-        homing_state.home_rails(self.rails, forcepos, self.home_position)
+        #homing_state.home_rails(self.rails, forcepos, self.home_position)
 
     def _motor_off(self, print_time):
         #self.limit_xy2 = -1.
