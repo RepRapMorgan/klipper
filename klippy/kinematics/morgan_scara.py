@@ -4,7 +4,8 @@
 # Copyright (C) 2024       Quentin Harley <quentin@morgan3dp.com>
 #
 # This file may be distributed under the terms of the GNU GPLv3 license.
-import math ,logging
+import math
+import logging
 import stepper #,mathutil, chelper
 
 class MorganScaraKinematics:
@@ -34,7 +35,7 @@ class MorganScaraKinematics:
         self.column_y = printer_config.getfloat(
             'column_y', below=0., default=-70.)
         self.d_limit = printer_config.getfloat('D_limit', default=0.95)
-        
+
         # Flag for homing to disable the kinematics
         self.homing_active = False
 
@@ -73,17 +74,19 @@ class MorganScaraKinematics:
         return [s for rail in self.rails for s in rail.get_steppers()]
 
     def calc_position(self, stepper_positions):
-        # Convert stepper positions to Cartesian (Forward Kinematics)
+        # Convert current stepper positions to Cartesian (Forward Kinematics)
         theta = stepper_positions[self.rails[0].get_name()]
         psi_theta = stepper_positions[self.rails[1].get_name()]
+        x_pos, y_pos = self.forward_kinematics(theta, psi_theta)
         z_pos = stepper_positions[self.rails[2].get_name()]
-        x_pos = self.l1 * math.cos(theta) + self.l2 * math.cos(psi_theta)
-        y_pos = self.l1 * math.sin(theta) + self.l2 * math.sin(psi_theta)
         return [x_pos, y_pos, z_pos]
 
     def calc_home_position(self, stepper_configs):
-        return [config.getfloat('home_position', 0.)
-                for config in stepper_configs]
+        homes = [config.getfloat('home_position', 0.)
+                       for config in stepper_configs]
+        home_xy = self.forward_kinematics(homes[0], homes[1])
+        home_pos = [home_xy[0], home_xy[1], homes[2]]
+        return home_pos
 
     def set_position(self, newpos, homing_axes):
         # Update internal position state
@@ -103,16 +106,16 @@ class MorganScaraKinematics:
         #logging.info(
         #    "Delta max build height %.2fmm (radius tapered above %.2fmm)"
         #    % (self.max_z, self.limit_z))
-        #homing_state.set_axes([0, 1, 2])
-        #forcepos = list(self.home_position)
-        #forcepos[2] = -1.5 * math.sqrt(max(self.arm2)-self.max_xy2)
-        #homing_state.home_rails(self.rails, forcepos, self.home_position)
+        homing_state.set_axes([0, 1, 2])
+        forcepos = list(self.home_position)
+        homing_state.home_rails(self.rails, forcepos, self.home_position)
+
         self.rails[0].setup_itersolve('morgan_scara_stepper_alloc', 'a',
             self.l1, self.l2, self.column_x, self.column_y, self.d_limit)
         self.rails[1].setup_itersolve('morgan_scara_stepper_alloc', 'b',
             self.l1, self.l2, self.column_x, self.column_y, self.d_limit)
         logging.info("Kinematic restored")
-        
+
 
     def _motor_off(self, print_time):
         #self.limit_xy2 = -1.
@@ -157,6 +160,12 @@ class MorganScaraKinematics:
         # Return psi, as a sum with theta
         # Morgan kinematics: Distal arm is driven from the base
         return [theta, psi + theta]
+
+    def forward_kinematics(self, theta, psi_theta):
+        # Convert stepper positions to Cartesian (Forward Kinematics)
+        x_pos = self.l1 * math.cos(theta) + self.l2 * math.cos(psi_theta)
+        y_pos = self.l1 * math.sin(theta) + self.l2 * math.sin(psi_theta)
+        return [x_pos, y_pos]
 
 
     def get_calibration(self):
