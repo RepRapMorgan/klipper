@@ -5,3 +5,9 @@ out
 .config.old
 klippy/.version
 *.swp
+.clang-format
+.pylintrc
+.vscode/settings.json
+klippy/chelper/kin_morgan_scara_try1.c
+klippy/kinematics/morganScaraCalibration.py
+klippy/kinematics/morgan_scara_try1.py
