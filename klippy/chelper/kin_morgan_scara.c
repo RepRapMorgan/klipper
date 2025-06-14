@@ -12,6 +12,10 @@
 #include <stdlib.h>    // malloc
 #include <string.h>    // memset
 
+#ifndef M_PI
+#define M_PI 3.14159265358979323846
+#endif
+
 struct morgan_stepper
 {
     struct stepper_kinematics sk;
@@ -27,21 +31,20 @@ morgan_scara_stepper_a_calc_position(struct stepper_kinematics* sk,
 {
     struct morgan_stepper* ms = container_of(sk, struct morgan_stepper, sk);
     struct coord c = move_get_coord(m, move_time);
+    double theta, psi;
 
     double x = c.x - ms->column_x;
     double y = c.y - ms->column_y;
 
     double r_squared = x * x + y * y;
-
     double D =
         (r_squared - ms->L1_squared - ms->L2_squared) / (2.0 * ms->L1 * ms->L2);
     D = fmin(fmax(D, -ms->D_limit), ms->D_limit);
 
-    double psi = atan2(sqrt(1 - D * D), D);
+    psi = atan2(sqrt(1 - D * D), D);
     psi = copysign(psi, -1.0);
 
-    double theta =
-        atan2(y, x) - atan2(ms->L2 * sin(psi), ms->L1 + ms->L2 * cos(psi));
+    theta = atan2(y, x) - atan2(ms->L2 * sin(psi), ms->L1 + ms->L2 * cos(psi));
 
     return theta;
 }
@@ -52,21 +55,20 @@ morgan_scara_stepper_b_calc_position(struct stepper_kinematics* sk,
 {
     struct morgan_stepper* ms = container_of(sk, struct morgan_stepper, sk);
     struct coord c = move_get_coord(m, move_time);
+    double theta, psi;
 
     double x = c.x - ms->column_x;
     double y = c.y - ms->column_y;
 
     double r_squared = x * x + y * y;
-
     double D =
         (r_squared - ms->L1_squared - ms->L2_squared) / (2.0 * ms->L1 * ms->L2);
     D = fmin(fmax(D, -ms->D_limit), ms->D_limit);
 
-    double psi = atan2(sqrt(1 - D * D), D);
+    psi = atan2(sqrt(1 - D * D), D);
     psi = copysign(psi, -1.0);
 
-    double theta =
-        atan2(y, x) - atan2(ms->L2 * sin(psi), ms->L1 + ms->L2 * cos(psi));
+    theta = atan2(y, x) - atan2(ms->L2 * sin(psi), ms->L1 + ms->L2 * cos(psi));
 
     return theta + psi;
 }
