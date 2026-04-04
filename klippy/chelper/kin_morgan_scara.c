@@ -41,16 +41,26 @@ static inline double morgan_stepper_calc_psi(struct morgan_stepper* ms,
     return copysign(atan2(sqrt(1.0 - d * d), d), -1.0);
 }
 
+static inline void morgan_stepper_calc_theta_psi(struct morgan_stepper* ms,
+                                                 struct coord c,
+                                                 double* theta, double* psi)
+{
+    double x = c.x - ms->column_x;
+    double y = c.y - ms->column_y;
+    *psi = morgan_stepper_calc_psi(ms, c);
+    *theta = atan2(y, x) - atan2(ms->l2 * sin(*psi),
+                                 ms->l1 + ms->l2 * cos(*psi));
+}
+
 static double
 morgan_scara_stepper_a_calc_position(struct stepper_kinematics* sk,
                                      struct move* m, double move_time)
 {
     struct morgan_stepper* ms = morgan_stepper_from_sk(sk);
     struct coord c = move_get_coord(m, move_time);
-    double x = c.x - ms->column_x;
-    double y = c.y - ms->column_y;
-    double psi = morgan_stepper_calc_psi(ms, c);
-    return atan2(y, x) - atan2(ms->l2 * sin(psi), ms->l1 + ms->l2 * cos(psi));
+    double theta, psi;
+    morgan_stepper_calc_theta_psi(ms, c, &theta, &psi);
+    return theta;
 }
 
 static double
@@ -59,8 +69,8 @@ morgan_scara_stepper_b_calc_position(struct stepper_kinematics* sk,
 {
     struct morgan_stepper* ms = morgan_stepper_from_sk(sk);
     struct coord c = move_get_coord(m, move_time);
-    double theta = morgan_scara_stepper_a_calc_position(sk, m, move_time);
-    double psi = morgan_stepper_calc_psi(ms, c);
+    double theta, psi;
+    morgan_stepper_calc_theta_psi(ms, c, &theta, &psi);
     return theta + psi;
 }
 

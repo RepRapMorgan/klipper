@@ -9,6 +9,7 @@ import math
 import logging
 import stepper
 import chelper
+from .morgan_scara_calibration import MorganScaraCalibration
 #import mathutil
 
 class MorganScaraKinematics:
@@ -100,6 +101,10 @@ class MorganScaraKinematics:
             ffi_lib.cartesian_stepper_alloc(b'x'), ffi_lib.free)
         self.cartesian_kinematics_b = ffi_main.gc(
             ffi_lib.cartesian_stepper_alloc(b'y'), ffi_lib.free)
+        gcode = self.printer.lookup_object('gcode')
+        gcode.register_command('MORGAN_REPORT_POSITION',
+                               self.cmd_MORGAN_REPORT_POSITION,
+                               desc=self.cmd_MORGAN_REPORT_POSITION_help)
 
         logging.info("Morgan SCARA %.2f %.2f %.2f %.2f %.2f",
                      self.l1, self.l2, self.column_x,
@@ -233,14 +238,19 @@ class MorganScaraKinematics:
         if self.limit_xy2 < 0.:
             if move.axes_d[0] or move.axes_d[1]:
                 raise move.move_error("Must home axis first")
-        elif xy2 < self.min_xy2 or xy2 > self.limit_xy2:
-            raise move.move_error()
+        elif xy2 < self.min_xy2:
+            raise move.move_error(
+                "SCARA XY radius below minimum (too close to column)")
+        elif xy2 > self.limit_xy2:
+            raise move.move_error(
+                "SCARA XY radius exceeds reachable workspace")
 
         if move.axes_d[2]:
             if end_pos[2] < self.limit_z[0] or end_pos[2] > self.limit_z[1]:
                 if self.limit_z[0] > self.limit_z[1]:
                     raise move.move_error("Must home axis first")
-                raise move.move_error()
+                raise move.move_error(
+                    "SCARA Z out of configured range")
             z_ratio = move.move_d / abs(move.axes_d[2])
             move.limit_speed(self.max_z_velocity * z_ratio,
                              self.max_z_accel * z_ratio)
@@ -297,9 +307,30 @@ class MorganScaraKinematics:
                  + self.l2 * math.sin(psi_theta))
         return [x_pos, y_pos]
 
+    cmd_MORGAN_REPORT_POSITION_help = (
+        "Report commanded SCARA joint and cartesian position")
+    def cmd_MORGAN_REPORT_POSITION(self, gcmd):
+        a_pos = self.rails[0].get_steppers()[0].get_commanded_position()
+        b_pos = self.rails[1].get_steppers()[0].get_commanded_position()
+        z_pos = self.rails[2].get_steppers()[0].get_commanded_position()
+        x_pos, y_pos = self.forward_kinematics(a_pos, b_pos)
+        radius = math.sqrt((x_pos - self.column_x) ** 2
+                           + (y_pos - self.column_y) ** 2)
+        gcmd.respond_info(
+            "Morgan SCARA commanded A=%.6f B=%.6f Z=%.6f -> "
+            "X=%.3f Y=%.3f Z=%.3f R=%.3f"
+            % (a_pos, b_pos, z_pos, x_pos, y_pos, z_pos, radius))
 
     def get_calibration(self):
-        pass
+        endstops = [rail.get_homing_info().position_endstop
+                    for rail in self.rails]
+        stepdists = [rail.get_steppers()[0].get_step_dist()
+                     for rail in self.rails]
+        return MorganScaraCalibration(
+            l1=self.l1, l2=self.l2,
+            column_x=self.column_x, column_y=self.column_y,
+            d_limit=self.d_limit,
+            endstops=endstops, stepdists=stepdists)
 
 def load_kinematics(toolhead, config):
     return MorganScaraKinematics(toolhead, config)
