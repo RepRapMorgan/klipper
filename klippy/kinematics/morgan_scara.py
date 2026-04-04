@@ -1,7 +1,7 @@
 # Code for handling the kinematics of  Morgan SCARA robots
 #
 # Copyright (C) 2016-2021  Kevin O'Connor <kevin@koconnor.net>
-# Copyright (C) 2024       Quentin Harley <quentin@morgan3dp.com>
+# Copyright (C) 2024-2026  Quentin Harley <quentin@morgan3dp.com>
 # Copyright (C) 2020       Pontus Borg <glpontus@gmail.com>
 #
 # This file may be distributed under the terms of the GNU GPLv3 license.
