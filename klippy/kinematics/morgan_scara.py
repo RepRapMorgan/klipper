@@ -26,30 +26,33 @@ class MorganScaraKinematics:
 
         self.rails = [rail_a, rail_b, rail_z]
 
-        # Read arm lengths
-        self.l1 = stepper_configs[0].getfloat('arm_length', above=0.)
-        self.l2 = stepper_configs[1].getfloat('arm_length', above=0.)
+        printer_config = config.getsection('printer')
+        # Read arm lengths (allow either per-stepper arm_length or
+        # legacy printer-level inner/outer arm length parameters).
+        l1_default = printer_config.getfloat('inner_arm_length', None,
+                                             above=0.)
+        l2_default = printer_config.getfloat('outer_arm_length', None,
+                                             above=0.)
+        self.l1 = stepper_configs[0].getfloat('arm_length', l1_default,
+                                              above=0.)
+        self.l2 = stepper_configs[1].getfloat('arm_length', l2_default,
+                                              above=0.)
         self.l1_sq = self.l1**2
         self.l2_sq = self.l2**2
 
-        printer_config = config.getsection('printer')
         self.column_x = printer_config.getfloat('column_x', default=190.)
-        self.column_y = printer_config.getfloat(
-            'column_y', below=0., default=-70.)
-        self.d_limit = printer_config.getfloat('d_limit', default=0.95)
-
-        # Flag for homing to disable the kinematics
-        self.homing_active = False
-        self.homedXY = False
+        self.column_y = printer_config.getfloat('column_y', default=-70.)
+        self.d_limit = printer_config.getfloat('d_limit', default=0.95,
+                                               minval=0., maxval=1.)
 
         #self.abs_endstops = [(rail.get_homing_info().position_endstop
         #                      + math.sqrt(arm2 - radius**2))
         #                     for rail, arm2 in zip(self.rails, self.arm2)]
 
         # Setup itersolve for the steppers
-        self.rails[0].setup_itersolve('morgan_scara_stepper_alloc', 'a',
+        self.rails[0].setup_itersolve('morgan_scara_stepper_alloc', b'a',
             self.l1, self.l2, self.column_x, self.column_y, self.d_limit)
-        self.rails[1].setup_itersolve('morgan_scara_stepper_alloc', 'b',
+        self.rails[1].setup_itersolve('morgan_scara_stepper_alloc', b'b',
             self.l1, self.l2, self.column_x, self.column_y, self.d_limit)
         self.rails[2].setup_itersolve('cartesian_stepper_alloc', b'z')
 
@@ -60,17 +63,33 @@ class MorganScaraKinematics:
                                                     self._motor_off)
 
         # Setup max velocity
-        self.max_velocity, self.max_accel = toolhead.get_max_velocity()
+        max_velocity, max_accel = toolhead.get_max_velocity()
         self.max_z_velocity = config.getfloat(
-            'max_z_velocity', self.max_velocity,
-            above=0., maxval=self.max_velocity)
-        self.max_z_accel = config.getfloat('max_z_accel', self.max_accel,
-                                          above=0., maxval=self.max_accel)
+            'max_z_velocity', max_velocity,
+            above=0., maxval=max_velocity)
+        self.max_z_accel = config.getfloat('max_z_accel', max_accel,
+                                           above=0., maxval=max_accel)
 
         # Setup boundary checks
-        self.need_home = False
-        self.home_position = self.calc_home_position(stepper_configs)
-        self.set_position([0., 0., 0.], ())
+        self.limit_z = (1.0, -1.0)
+        self.limit_xy2 = -1.
+        self.min_xy2 = max(0., self.l1_sq + self.l2_sq
+                   - 2.0 * self.l1 * self.l2 * self.d_limit)
+        self.max_xy2 = max(self.min_xy2, self.l1_sq + self.l2_sq
+                   + 2.0 * self.l1 * self.l2 * self.d_limit)
+        min_base_distance = printer_config.getfloat('min_base_distance', 0.,
+                                minval=0.)
+        self.min_xy2 = max(self.min_xy2, min_base_distance**2)
+        self.need_home = True
+        self.home_position = self.calc_home_position()
+
+        max_xy = math.sqrt(self.max_xy2)
+        min_z, max_z = self.rails[2].get_range()
+        self.axes_min = toolhead.Coord(self.column_x - max_xy,
+                           self.column_y - max_xy, min_z, 0.)
+        self.axes_max = toolhead.Coord(self.column_x + max_xy,
+                           self.column_y + max_xy, max_z, 0.)
+        self.set_position([0., 0., 0.], "")
 
         # Homing trickery fake cartesial kinematic:
         # Borrowed from bondus/5barscara
@@ -78,9 +97,9 @@ class MorganScaraKinematics:
         self.printer = config.get_printer()
         ffi_main, ffi_lib = chelper.get_ffi()
         self.cartesian_kinematics_a = ffi_main.gc(
-            ffi_lib.cartesian_stepper_alloc('x'), ffi_lib.free)
+            ffi_lib.cartesian_stepper_alloc(b'x'), ffi_lib.free)
         self.cartesian_kinematics_b = ffi_main.gc(
-            ffi_lib.cartesian_stepper_alloc('y'), ffi_lib.free)
+            ffi_lib.cartesian_stepper_alloc(b'y'), ffi_lib.free)
 
         logging.info("Morgan SCARA %.2f %.2f %.2f %.2f %.2f",
                      self.l1, self.l2, self.column_x,
@@ -98,9 +117,8 @@ class MorganScaraKinematics:
         z_pos = stepper_positions[self.rails[2].get_name()]
         return [x_pos, y_pos, z_pos]
 
-    def calc_home_position(self, stepper_configs):
-        homes = [config.getfloat('home_position', 0.)
-                       for config in stepper_configs]
+    def calc_home_position(self):
+        homes = [rail.get_homing_info().position_endstop for rail in self.rails]
         home_xy = self.forward_kinematics(homes[0], homes[1])
         home_pos = [home_xy[0], home_xy[1], homes[2]]
         return home_pos
@@ -109,26 +127,49 @@ class MorganScaraKinematics:
         # Update internal position state
         for rail in self.rails:
             rail.set_position(newpos)
-        self.limit_xy2 = -1.
-        if tuple(homing_axes) == (0, 1, 2):
-            self.need_home = False
+        if "x" in homing_axes and "y" in homing_axes:
+            self.limit_xy2 = self.max_xy2
+        if "z" in homing_axes:
+            self.limit_z = self.rails[2].get_range()
+        self.need_home = self.limit_xy2 < 0. or self.limit_z[0] > self.limit_z[1]
+
+    def clear_homing_state(self, clear_axes):
+        if "x" in clear_axes or "y" in clear_axes:
+            self.limit_xy2 = -1.
+        if "z" in clear_axes:
+            self.limit_z = (1.0, -1.0)
+        self.need_home = self.limit_xy2 < 0. or self.limit_z[0] > self.limit_z[1]
 
     def home(self, homing_state):
         # Define homing behavior
         # code borrowed and adapted from bondus/5barscara
         # a and b axes are always homed simultaneously
         axes = homing_state.get_axes()
-        logging.info("SCARA home %s", axes)
-        if 0 in axes or 1 in axes: #  XY
-            # Home left and right at the same time
-            self.homedXY = False
-            homing_state.set_axes([0, 1])
-            rails = [self.rails[0], self.rails[1]]
-            a_endstop = rails[0].get_homing_info().position_endstop
-            _, a_max = rails[0].get_range()
+        home_xy = 0 in axes or 1 in axes
+        home_z = 2 in axes
+        updated_axes = []
+        if home_xy:
+            updated_axes.extend([0, 1])
+        if home_z:
+            updated_axes.append(2)
+        homing_state.set_axes(updated_axes)
+        logging.info("SCARA home %s", updated_axes)
 
-            b_endstop = rails[1].get_homing_info().position_endstop
-            _, b_max = rails[1].get_range()
+        if home_xy:
+            # Home left and right at the same time
+            rails = [self.rails[0], self.rails[1]]
+            homepos = [None, None, None, None]
+            forcepos = [None, None, None, None]
+            for i, rail in enumerate(rails):
+                rail_min, rail_max = rail.get_range()
+                hi = rail.get_homing_info()
+                homepos[i] = hi.position_endstop
+                if hi.positive_dir:
+                    forcepos[i] = (hi.position_endstop
+                                   - 1.5 * (hi.position_endstop - rail_min))
+                else:
+                    forcepos[i] = (hi.position_endstop
+                                   + 1.5 * (rail_max - hi.position_endstop))
 
             # Swap to linear kinematics
             toolhead = self.printer.lookup_object('toolhead')
@@ -137,38 +178,31 @@ class MorganScaraKinematics:
             steppers = [rail.get_steppers()[0] for rail in rails]
             kinematics = [self.cartesian_kinematics_a,
                           self.cartesian_kinematics_b]
-            prev_sks    = [s.set_stepper_kinematics(kinematic)
-                            for s, kinematic in zip(steppers, kinematics)]
+            prev_sks = [s.set_stepper_kinematics(kinematic)
+                        for s, kinematic in zip(steppers, kinematics)]
 
             try:
-                homepos  = [a_endstop, b_endstop, None, None]
-                hil = rails[0].get_homing_info()
-                if hil.positive_dir:
-                    forcepos = [0, 0, None, None]
-                else:
-                    forcepos = [a_max, b_max, None, None]
                 logging.info("SCARA home AB %s %s %s", rails, forcepos, homepos)
 
                 homing_state.home_rails(rails, forcepos, homepos)
 
-                for s, prev_sk in zip(steppers, prev_sks):
-                    s.set_stepper_kinematics(prev_sk)
-
-                [x,y] = self.forward_kinematics(
+                x, y = self.forward_kinematics(
                     rails[0].get_homing_info().position_endstop,
                     rails[1].get_homing_info().position_endstop)
-                toolhead.set_position( [x, y, 0, 0], (0, 1))
+                curpos = toolhead.get_position()
+                toolhead.set_position([x, y, curpos[2], curpos[3]],
+                                      homing_axes="xy")
                 toolhead.flush_step_generation()
-                self.homedXY = True
-                logging.info("Homed LR done")
 
-            except Exception as e:
+            except Exception:
                 for s, prev_sk in zip(steppers, prev_sks):
                     s.set_stepper_kinematics(prev_sk)
                 toolhead.flush_step_generation()
                 raise
+            for s, prev_sk in zip(steppers, prev_sks):
+                s.set_stepper_kinematics(prev_sk)
 
-        if 2 in axes: # Z
+        if home_z:
             logging.info("SCARA home Z %s", axes)
             rail = self.rails[2]
             position_min, position_max = rail.get_range()
@@ -184,23 +218,48 @@ class MorganScaraKinematics:
             logging.info("SCARA home Z %s %s %s",
                          [rail], forcepos, homepos)
             homing_state.home_rails([rail], forcepos, homepos)
+
     def _motor_off(self, print_time):
-        #self.limit_xy2 = -1.
-        self.need_home = False
+        del print_time
+        self.clear_homing_state("xyz")
 
     def check_move(self, move):
         # Validate if the move is within kinematic limits
-        pass
+        end_pos = move.end_pos
+        rel_x = end_pos[0] - self.column_x
+        rel_y = end_pos[1] - self.column_y
+        xy2 = rel_x * rel_x + rel_y * rel_y
+
+        if self.limit_xy2 < 0.:
+            if move.axes_d[0] or move.axes_d[1]:
+                raise move.move_error("Must home axis first")
+        elif xy2 < self.min_xy2 or xy2 > self.limit_xy2:
+            raise move.move_error()
+
+        if move.axes_d[2]:
+            if end_pos[2] < self.limit_z[0] or end_pos[2] > self.limit_z[1]:
+                if self.limit_z[0] > self.limit_z[1]:
+                    raise move.move_error("Must home axis first")
+                raise move.move_error()
+            z_ratio = move.move_d / abs(move.axes_d[2])
+            move.limit_speed(self.max_z_velocity * z_ratio,
+                             self.max_z_accel * z_ratio)
 
     def get_status(self, eventtime):
         # Return kinematic status
+        del eventtime
+        xy_home = "xy" if self.limit_xy2 >= 0. else ""
+        z_home = "z" if self.limit_z[0] <= self.limit_z[1] else ""
         return {
-            'homed_axes': '' if self.need_home else 'xyz',
-
+            'homed_axes': xy_home + z_home,
+            'axis_minimum': self.axes_min,
+            'axis_maximum': self.axes_max,
         }
 
     def inverse_kinematics(self, x, y):
         # Calculate the inverse kinematics for a given point
+        x = x - self.column_x
+        y = y - self.column_y
 
         # Calculate the distance to the point
         r_squared = x * x + y * y
@@ -230,8 +289,12 @@ class MorganScaraKinematics:
 
     def forward_kinematics(self, theta, psi_theta):
         # Convert stepper positions to Cartesian (Forward Kinematics)
-        x_pos = self.l1 * math.cos(theta) + self.l2 * math.cos(psi_theta)
-        y_pos = self.l1 * math.sin(theta) + self.l2 * math.sin(psi_theta)
+        x_pos = (self.column_x
+                 + self.l1 * math.cos(theta)
+                 + self.l2 * math.cos(psi_theta))
+        y_pos = (self.column_y
+                 + self.l1 * math.sin(theta)
+                 + self.l2 * math.sin(psi_theta))
         return [x_pos, y_pos]
 
 
